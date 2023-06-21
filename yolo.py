@@ -5,6 +5,7 @@ def run_yolo(source):
     model = YOLO('yolov8s.pt')
     results = model(source)
     frame = results[0].orig_img
+    bbox_list = []
 
     for result in results:
         for box in result.boxes:
@@ -15,7 +16,16 @@ def run_yolo(source):
                 bottom_right = (x2, y2)
 
                 cv2.rectangle(frame, top_left, bottom_right, color=(0, 255, 0), thickness=2)
-    return frame
+                
+                #for mot format
+                bb_left = x1
+                bb_top = y1
+                bb_width = x2 - x1
+                bb_height = y2 - y1
+
+                bbox_list.append([bb_left, bb_top, bb_width, bb_height])
+
+    return frame, bbox_list
 
     # cv2.imshow('Image', frame)
     # cv2.waitKey(0)
