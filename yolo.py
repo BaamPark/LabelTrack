@@ -10,6 +10,7 @@ def run_yolo(source):
     for result in results:
         for box in result.boxes:
             if box.cls == 0:
+                print("person", box.xyxy[0].tolist())
                 bbox = [int(x) for x in box.xyxy[0].tolist()]
                 x1, y1, x2, y2 = bbox
                 top_left = (x1, y1)
