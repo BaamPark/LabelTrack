@@ -61,6 +61,10 @@ class MainWindow(QMainWindow):
         self.btn_remove_label.clicked.connect(self.remove_label)
         self.btn_remove_label.setFixedWidth(100)
 
+        self.btn_edit_text = QPushButton("Edit Text")  # Create the button
+        self.btn_edit_text.clicked.connect(self.edit_text)  # Connect it to the function that will handle the button click
+        self.btn_edit_text.setFixedWidth(100)  # Set the button width
+
         self.image_label = ClickableImageLabel(self)
         self.image_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.image_label.setPixmap(QPixmap(''))
@@ -79,6 +83,7 @@ class MainWindow(QMainWindow):
         # Create a QVBoxLayout for text and list widgets
         text_list_layout = QVBoxLayout()
         text_list_layout.addWidget(self.text_widget)
+        text_list_layout.addWidget(self.btn_edit_text)
         text_list_layout.addWidget(self.bbox_list_widget)
 
         # Create a QHBoxLayout instance for the overall layout
@@ -124,20 +129,15 @@ class MainWindow(QMainWindow):
             image_file = self.image_files[self.current_image_index]
             source = os.path.join(self.image_dir, image_file)
             _, bbox_list = run_yolo(source)
+            print("look here", bbox_list)
 
             # Load the image into a QPixmap
-            pixmap = QPixmap(source)
-            image_width = pixmap.width()
-            image_height = pixmap.height()
+            scale_x, scale_y, vertical_offset = self.calculate_scale_and_offset(source)
 
+            pixmap = QPixmap(source)
             # Scale the QPixmap to fit the QLabel
             pixmap = pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio)
-            scale_x = pixmap.width() / image_width
-            scale_y = pixmap.height() / image_height
-
-            # Calculate the vertical offset if any
-            vertical_offset = (self.image_label.height() - pixmap.height()) / 2
-            print(pixmap.height())
+            scale_x, scale_y, vertical_offset = self.calculate_scale_and_offset(source)
 
             # Update QLabel
             self.image_label.setPixmap(pixmap)
@@ -161,17 +161,15 @@ class MainWindow(QMainWindow):
                 # Add the bounding box to the image_label's rectangles list and to the list widget
                 rect = (QPoint(left, top), QPoint(left + width, top + height))
                 self.image_label.rectangles.append(rect)
-                self.bbox_list_widget.addItem(str((left, top, left + width, top + height)))  # add the coordinates to the list widget
+                self.bbox_list_widget.addItem(str((left, top, width, height)))  # add the coordinates to the list widget
 
             pixmap = pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio)
             self.image_label.update()
 
     def add_label(self):
         if self.btn_add_label.isChecked():
-            print("Add label checked")
             self.image_label.drawing = True
         else:
-            print("Add label unchecked")
             self.image_label.drawing = False
 
     def remove_label(self):
@@ -179,17 +177,111 @@ class MainWindow(QMainWindow):
         item = self.bbox_list_widget.currentItem()
 
         if item:
-            # Convert the string coordinates back to tuples
-            coords = tuple(map(int, item.text()[1:-1].split(', ')))
-            rect = (QPoint(coords[0], coords[1]), QPoint(coords[2], coords[3]))
+            splited_string = [s.strip() for s in item.text().replace('(', '').replace(')', '').split(',')]
+            if len(splited_string) > 4:
+                id = splited_string.pop()
+                
+                coords = [int(part.strip()) for part in splited_string]
+                coords = xyhw_to_xyxy(coords)
+                rect = (QPoint(coords[0], coords[1]), QPoint(coords[2], coords[3]), id)
+
+            else:
+                coords = [int(part.strip()) for part in splited_string]
+                coords = xyhw_to_xyxy(coords)
+                rect = (QPoint(coords[0], coords[1]), QPoint(coords[2], coords[3]))
+
             # Remove the item from QListWidget
             self.bbox_list_widget.takeItem(self.bbox_list_widget.row(item))
 
             # Remove the corresponding rectangle from self.image_label.rectangles
-            self.image_label.rectangles.remove(rect) 
+            self.image_label.rectangles.remove(rect)
 
             # Repaint the QLabel
             self.image_label.repaint()
+
+    def edit_text(self):
+        image_file = self.image_files[self.current_image_index]
+        source = os.path.join(self.image_dir, image_file)
+        # Get the current text from the QTextEdit widget
+        new_text = self.text_widget.toPlainText()
+
+        scale_x, scale_y, vertical_offset = self.calculate_scale_and_offset(source)
+
+        # Get the currently selected item from the QListWidget
+        current_item = self.bbox_list_widget.currentItem()
+
+        # If an item is selected, update its text
+        if current_item is not None:
+            current_text = current_item.text()
+            splited_string = current_text.replace('(', '').replace(')', '').split(',')
+            if len(splited_string) > 4:
+                splited_string = splited_string[:4]
+                current_text = "({},{},{},{})".format(splited_string[0], splited_string[1], splited_string[2], splited_string[3])
+
+            current_item.setText(current_text + ', ' + new_text)  # append the new text after a comma for separation
+            
+            left, top, width, height = map(int, splited_string)
+            vertices = [left, top, width, height]
+            vertices = xyhw_to_xyxy(vertices)
+            right, bottom = vertices[2], vertices[3]
+
+            capture_bbox(vertices, source, scale_x, scale_y, vertical_offset, new_text)
+
+            # Update the rectangles list with the bounding box ID
+            # it has use for loop because whenever you update iamge_label, the paintEvent work same jobs again.
+            for i, rect in enumerate(self.image_label.rectangles):
+                if rect[0] == QPoint(left, top) and rect[1] == QPoint(right, bottom):
+                    self.image_label.rectangles[i] = (rect[0], rect[1], new_text)
+                    break
+
+        # Force a repaint
+        self.image_label.update()
+
+    def calculate_scale_and_offset(self, source):
+        # Load the image into a QPixmap
+        pixmap = QPixmap(source)
+        image_width = pixmap.width()
+        image_height = pixmap.height()
+
+        # Scale the QPixmap to fit the QLabel
+        pixmap = pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio)
+        scale_x = pixmap.width() / image_width
+        scale_y = pixmap.height() / image_height
+
+        # Calculate the vertical offset if any
+        vertical_offset = (self.image_label.height() - pixmap.height()) / 2
+
+        return scale_x, scale_y, vertical_offset
+
+def xyhw_to_xyxy(coords, reverse=False):
+    if not reverse:
+        coords[2], coords[3] = coords[2] + coords[0], coords[3] + coords[1]
+    else:
+        coords[2], coords[3] = coords[2] - coords[0], coords[3] - coords[1]
+    return coords
+
+#this function will be called when text edit button is pressed
+def capture_bbox(bbox, source_path, scale_x, scale_y, vertical_offset, id):
+    import cv2
+    print(bbox)
+    # Read the image into a numpy array
+    source_image = cv2.imread(source_path)
+
+    # Reverse the scaling and offset
+    original_bbox = [int(bbox[0] / scale_x),  # left
+                     int((bbox[1] - vertical_offset) / scale_y),  # top
+                     int(bbox[2] / scale_x),  # right
+                     int((bbox[3] - vertical_offset) / scale_y)]  # bottom
+
+    # Crop the bounding box from the original image
+    bbox_image = source_image[original_bbox[1]:original_bbox[3], original_bbox[0]:original_bbox[2]]
+
+    os.makedirs("saved IDs/ID{}".format(id), exist_ok=True)
+
+    output_path = "saved IDs/ID{}/frame{}_video{}.jpg".format(id, "frame_num", "view")  # replace with your desired output path
+
+    cv2.imwrite(output_path, bbox_image)
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
