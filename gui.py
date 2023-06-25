@@ -17,6 +17,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Image Annotation Tool")
         
         self.image_dir = None
+        self.image_annotations = {}
         self.image_files = []
         self.current_image_index = -1
         self.bboxes = []
@@ -28,7 +29,12 @@ class MainWindow(QMainWindow):
         self.bbox_list_widget.setFixedWidth(200)
         self.text_widget = QTextEdit()  # New text widget
         self.text_widget.setFixedWidth(200)  # Set a fixed height
-        self.text_widget.setFixedHeight(50)
+        self.text_widget.setFixedHeight(25)
+
+        self.id_widget = QTextEdit()  # New text widget
+        self.id_widget.setFixedWidth(200)  # Set a fixed height
+        self.id_widget.setFixedHeight(25)
+        
         self.resize(1400, 1000)
 
         # Create a QPushButton
@@ -69,6 +75,23 @@ class MainWindow(QMainWindow):
         self.image_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.image_label.setPixmap(QPixmap(''))
 
+        self.saved_image_label = QLabel(self)  #!
+        self.saved_image_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.saved_image_label.setMaximumWidth(200)
+        self.saved_image_label.setMaximumHeight(200)
+        self.saved_image_label.setPixmap(QPixmap(''))
+
+        self.btn_next_id = QPushButton("Next ID")
+        self.btn_next_id.clicked.connect(self.next_id) #!
+        self.btn_next_id.setFixedWidth(100)
+
+        self.btn_prev_id = QPushButton("Prev ID")
+        self.btn_prev_id.clicked.connect(self.previous_id) #!
+        self.btn_prev_id.setFixedWidth(100)
+
+        self.btn_enter_id = QPushButton("Enter ID") # New text widget
+        self.btn_enter_id.clicked.connect(self.enter_id) #!
+        self.btn_enter_id.setFixedWidth(100)
 
         # Create a QVBoxLayout instance for buttons
         button_layout = QVBoxLayout()
@@ -79,12 +102,19 @@ class MainWindow(QMainWindow):
         button_layout.addWidget(self.btn_add_label)
         button_layout.addWidget(self.btn_remove_label)
         button_layout.addWidget(self.btn_associate_label)
-        
+                
         # Create a QVBoxLayout for text and list widgets
         text_list_layout = QVBoxLayout()
         text_list_layout.addWidget(self.text_widget)
         text_list_layout.addWidget(self.btn_edit_text)
         text_list_layout.addWidget(self.bbox_list_widget)
+        
+        text_list_layout.addWidget(self.id_widget)
+        text_list_layout.addWidget(self.btn_enter_id)
+        text_list_layout.addWidget(self.btn_next_id)
+        text_list_layout.addWidget(self.btn_prev_id)
+        text_list_layout.addWidget(self.saved_image_label) #!
+        
 
         # Create a QHBoxLayout instance for the overall layout
         layout = QHBoxLayout()
@@ -96,6 +126,36 @@ class MainWindow(QMainWindow):
         main_widget.setLayout(layout)
         self.setCentralWidget(main_widget)
 
+        # self.load_saved_image("saved IDs/ID124/frameframe_num_videoview.jpg")
+
+    def enter_id(self):
+        self.id = self.id_widget.toPlainText()
+        id_folder = f"saved IDs/ID{self.id}"
+        if os.path.isdir(id_folder):
+            # get all image files in the directory, assuming they are jpg
+            self.id_image_files = sorted([f for f in os.listdir(id_folder) if f.endswith(".jpg")])
+            if self.id_image_files:  # if there are images in the directory
+                self.id_current_image_index = 0
+                self.load_saved_image(os.path.join(id_folder, self.id_image_files[self.id_current_image_index]))
+                
+    def next_id(self):
+        if self.id_image_files and self.id_current_image_index < len(self.id_image_files) - 1:
+            # increment the index
+            self.id_current_image_index += 1
+            # load the image
+            self.load_saved_image(os.path.join(f"saved IDs/ID{self.id}", self.id_image_files[self.id_current_image_index]))
+    def previous_id(self):
+        if self.id_image_files and self.id_current_image_index < len(self.id_image_files) - 1:
+            # increment the index
+            self.id_current_image_index -= 1
+            # load the image
+            self.load_saved_image(os.path.join(f"saved IDs/ID{self.id}", self.id_image_files[self.id_current_image_index]))
+
+    def load_saved_image(self, img_path): #!
+        # A new function for loading the image
+        pixmap = QPixmap(img_path)
+        self.saved_image_label.setPixmap(pixmap)
+
     def browse_folder(self):
         self.image_dir = QFileDialog.getExistingDirectory(self, 'Open directory', '/home')
         if self.image_dir:
@@ -103,12 +163,41 @@ class MainWindow(QMainWindow):
             self.current_image_index = -1
             self.next_image()
 
+    # def next_image(self):
+    #     if self.image_files and self.current_image_index < len(self.image_files) - 1:
+    #         self.current_image_index += 1
+    #         self.load_image()
+
+    # def previous_image(self):
+    #     if self.image_files and self.current_image_index > 0:
+    #         self.current_image_index -= 1
+    #         self.load_image()
+
+    # def load_image(self):
+    #     if self.image_files:
+    #         image_file = self.image_files[self.current_image_index]
+    #         pixmap = QPixmap(os.path.join(self.image_dir, image_file))
+    #         scaled_pixmap = pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio) #! it fit the image to GUI so it doesn't show the original size.
+    #         self.image_label.setPixmap(scaled_pixmap)
+    #         self.image_label.rectangles.clear() # Clear the rectangles list when a new image is loaded
+    #         self.bbox_list_widget.clear()
+
     def next_image(self):
+        if self.image_files:
+            
+            self.image_annotations[self.image_files[self.current_image_index]] = {
+                "bounding_boxes": [self.bbox_list_widget.item(i).text() for i in range(self.bbox_list_widget.count())]
+            }
+        print("look herer", self.image_annotations[self.image_files[self.current_image_index]])
         if self.image_files and self.current_image_index < len(self.image_files) - 1:
             self.current_image_index += 1
             self.load_image()
 
     def previous_image(self):
+        if self.image_files:
+            self.image_annotations[self.image_files[self.current_image_index]] = {
+                "bounding_boxes": [self.bbox_list_widget.item(i).text() for i in range(self.bbox_list_widget.count())]
+            }
         if self.image_files and self.current_image_index > 0:
             self.current_image_index -= 1
             self.load_image()
@@ -117,10 +206,72 @@ class MainWindow(QMainWindow):
         if self.image_files:
             image_file = self.image_files[self.current_image_index]
             pixmap = QPixmap(os.path.join(self.image_dir, image_file))
-            scaled_pixmap = pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio) #! it fit the image to GUI so it doesn't show the original size.
+            scaled_pixmap = pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio) 
             self.image_label.setPixmap(scaled_pixmap)
+
             self.image_label.rectangles.clear() # Clear the rectangles list when a new image is loaded
-            self.bbox_list_widget.clear()
+            if image_file in self.image_annotations:
+                self.bbox_list_widget.clear()
+                for bbox in self.image_annotations[image_file]["bounding_boxes"]:
+                    self.bbox_list_widget.addItem(bbox)
+                    splited_string = [s.strip() for s in bbox.replace('(', '').replace(')', '').split(',')]
+                    if len(splited_string) == 4:
+                        x, y, w, h = map(int, splited_string)
+                        rect = (QPoint(x, y), QPoint(x + w, y + h))
+                    else:
+                        x, y, w, h, id = map(int, splited_string)
+                        rect = (QPoint(x, y), QPoint(x + w, y + h), id)
+                    self.image_label.rectangles.append(rect)
+
+            else:
+                self.bbox_list_widget.clear()
+
+    # def next_image(self):
+    #     # Save current image annotations before loading next image
+    #     if self.image_files:
+    #         self.image_annotations[self.image_files[self.current_image_index]] = {
+    #             "bounding_boxes": self.image_label.rectangles, 
+    #             "id": self.id_widget.toPlainText(), 
+    #             "text": self.text_widget.toPlainText()
+    #         }
+    #     if self.image_files and self.current_image_index < len(self.image_files) - 1:
+    #         self.current_image_index += 1
+    #         self.load_image()
+
+    # def previous_image(self):
+    #     # Save current image annotations before loading previous image
+    #     if self.image_files:
+    #         self.image_annotations[self.image_files[self.current_image_index]] = {
+    #             "bounding_boxes": self.image_label.rectangles, 
+    #             "id": self.id_widget.toPlainText(), 
+    #             "text": self.text_widget.toPlainText()
+    #         }
+    #     if self.image_files and self.current_image_index > 0:
+    #         self.current_image_index -= 1
+    #         self.load_image()
+
+    # def load_image(self):
+    #     if self.image_files:
+    #         image_file = self.image_files[self.current_image_index]
+    #         pixmap = QPixmap(os.path.join(self.image_dir, image_file))
+    #         scaled_pixmap = pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio) #! it fit the image to GUI so it doesn't show the original size.
+    #         self.image_label.setPixmap(scaled_pixmap)
+
+    #         # Load annotations for the new image
+    #         if image_file in self.image_annotations:
+    #             print(self.image_annotations)
+    #             annotations = self.image_annotations[image_file]
+    #             self.image_label.rectangles = annotations["bounding_boxes"]
+    #             self.id_widget.setText(annotations["id"])
+    #             self.text_widget.setText(annotations["text"])
+    #             self.bbox_list_widget.clear()
+    #             for bbox in self.image_label.rectangles:
+    #                 self.bbox_list_widget.addItem(f"{bbox[0]}, {bbox[1]}, {bbox[2]}, {bbox[3]}")
+    #         else:
+    #             self.image_label.rectangles.clear() # Clear the rectangles list when a new image is loaded
+    #             self.bbox_list_widget.clear()
+    #             self.id_widget.clear()
+    #             self.text_widget.clear()      
 
     def run_detector(self):
         from yolo import run_yolo
@@ -225,7 +376,7 @@ class MainWindow(QMainWindow):
             vertices = xyhw_to_xyxy(vertices)
             right, bottom = vertices[2], vertices[3]
 
-            capture_bbox(vertices, source, scale_x, scale_y, vertical_offset, new_text)
+            capture_bbox(vertices, source, scale_x, scale_y, vertical_offset, new_text, self.current_image_index)
 
             # Update the rectangles list with the bounding box ID
             # it has use for loop because whenever you update iamge_label, the paintEvent work same jobs again.
@@ -261,7 +412,7 @@ def xyhw_to_xyxy(coords, reverse=False):
     return coords
 
 #this function will be called when text edit button is pressed
-def capture_bbox(bbox, source_path, scale_x, scale_y, vertical_offset, id):
+def capture_bbox(bbox, source_path, scale_x, scale_y, vertical_offset, id, frame_num):
     import cv2
     print(bbox)
     # Read the image into a numpy array
@@ -278,7 +429,7 @@ def capture_bbox(bbox, source_path, scale_x, scale_y, vertical_offset, id):
 
     os.makedirs("saved IDs/ID{}".format(id), exist_ok=True)
 
-    output_path = "saved IDs/ID{}/frame{}_video{}.jpg".format(id, "frame_num", "view")  # replace with your desired output path
+    output_path = "saved IDs/ID{}/frame{}_video{}.jpg".format(id, frame_num, "view")  # replace with your desired output path
 
     cv2.imwrite(output_path, bbox_image)
 
