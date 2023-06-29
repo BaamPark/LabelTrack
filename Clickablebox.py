@@ -15,6 +15,7 @@ class ClickableImageLabel(QLabel):
         self.end_pos = None
         self.drawing = False
         self.rectangles = []
+        self.clicked_rect = []
 
     def mousePressEvent(self, event):
         if self.parent.btn_add_label.isChecked() and event.button() == Qt.LeftButton:
@@ -37,12 +38,14 @@ class ClickableImageLabel(QLabel):
     def paintEvent(self, event):
         super().paintEvent(event)
         painter = QPainter(self)
-        pen = QPen(Qt.red, 3)
-        painter.setPen(pen)
+        # pen = QPen(Qt.green, 3)
+        # painter.setPen(pen)
         font = painter.font()
         font.setPointSize(14)  # You can adjust the size as needed
         painter.setFont(font)
         for rect in self.rectangles:
+            pen = QPen(Qt.green, 3)
+            painter.setPen(pen)
             if len(rect) == 3:  # Check if this rectangle has an ID
                 bbox_id = rect[2]
                 print(bbox_id)
@@ -52,7 +55,9 @@ class ClickableImageLabel(QLabel):
                 
                 # Draw the text at the top center of the bounding box
                 painter.drawText(int(center_x - 5), int(rect[0].y() - 5), str(bbox_id))  # The "-5" is for adjusting the position of the text
-
+            if 'red' in rect:
+                pen = QPen(Qt.red, 3)
+                painter.setPen(pen)
             painter.drawRect(QRect(rect[0], rect[1]))
         painter.end()
             

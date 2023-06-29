@@ -9,6 +9,7 @@ from Clickablebox import ClickableImageLabel
 from PyQt5.QtWidgets import QScrollArea
 from PyQt5.QtGui import QPalette
 from PyQt5.QtCore import QPoint
+from PyQt5.QtWidgets import QMessageBox
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
@@ -16,6 +17,7 @@ class MainWindow(QMainWindow):
 
         self.setWindowTitle("Image Annotation Tool")
         
+        self.double_click_count = 0
         self.image_dir = None
         self.image_annotations = {}
         self.image_files = []
@@ -36,6 +38,8 @@ class MainWindow(QMainWindow):
         self.id_widget.setFixedHeight(25)
         
         self.resize(1400, 1000)
+
+        self.bbox_list_widget.itemDoubleClicked.connect(self.handle_item_double_clicked)
 
         # Create a QPushButton
         self.btn_browse = QPushButton("Browse")
@@ -133,12 +137,55 @@ class MainWindow(QMainWindow):
 
         # self.load_saved_image("saved IDs/ID124/frameframe_num_videoview.jpg")
 
+    def handle_item_double_clicked(self, item):
+        if self.double_click_count > 0:
+            print("double clicked more than one")
+            print("item will be removed from rectangle list:", self.image_label.rectangles[-1])
+            self.image_label.rectangles.pop()
+            self.image_label.update()
+        self.highlight_bbox(item.text())
+        self.double_click_count += 1
+        print(f"Item '{item.text()}' was double clicked!")
+
+    
+    def highlight_bbox(self, bbox):
+        # Clear all previous highlights
+        # for rect in self.image_label.rectangles:
+        #     rect[2] = None  # Remove the id, effectively removing the highlight
+        # Highlight the specified bounding box
+        splited_string = [s.strip() for s in bbox.replace('(', '').replace(')', '').split(',')]
+        print("splited string:", splited_string)
+        if len(splited_string) == 4:
+            x, y, w, h = map(int, bbox.replace('(', '').replace(')', '').split(','))
+            rect = (QPoint(x, y), QPoint(x + w, y + h), '', 'red')
+            self.image_label.rectangles.append(rect)
+            print("appended:", self.image_label.rectangles[-1])
+        elif len(splited_string) == 5:
+            x, y, w, h, id = map(int, bbox.replace('(', '').replace(')', '').split(','))
+            rect = (QPoint(x, y), QPoint(x + w, y + h), id, 'red')
+            self.image_label.rectangles.append(rect)
+            print("appended:", self.image_label.rectangles[-1])
+
+        self.image_label.update()
+        # Refresh the image to show the highlight
+        # self.load_image()
+
     def export_labels(self):
         #self.image_annotations[image_file][]
         #{'160418_above-022400.jpg': ['(339, 124, 320, 588), 123'], '170804-above bed-009600.jpg': ['(278, 263, 208, 460), 123', '(608, 373, 244, 282), 124', '(120, 313, 136, 174)'], '170814-above bed-064000.jpg': ['(665, 162, -409, 325)', '(642, 588, 180, 179)', '(796, 315, 155, 138)']}
         with open('annotations.txt', 'w') as f:
             for file, annotations in self.image_annotations.items():
                 for annotation in annotations:
+                    splited_string = [s.strip() for s in annotation.replace('(', '').replace(')', '').split(',')]
+                    if len(splited_string) < 5: #when id is not included
+                    # Show a message box
+                        msg = QMessageBox()
+                        msg.setIcon(QMessageBox.Warning)
+                        msg.setText("ID missing!")
+                        msg.setInformativeText(f"The ID is missing for the file {file}.")
+                        msg.setWindowTitle("Export Warning")
+                        msg.exec_()
+                        continue
                     bbox, id_ = annotation.rsplit(',', 1)
                     x, y, w, h = map(int, bbox.strip('()').split(','))
                     f.write(f"{file},{id_.strip()},{x},{y},{w},{h},1,-1,-1,-1\n")
@@ -215,6 +262,8 @@ class MainWindow(QMainWindow):
         pass
 
     def load_image(self):
+        self.double_click_count = 0
+        print("current double click count status", self.double_click_count)
         if self.image_files:
             image_file = self.image_files[self.current_image_index]
             pixmap = QPixmap(os.path.join(self.image_dir, image_file))
@@ -246,7 +295,6 @@ class MainWindow(QMainWindow):
             image_file = self.image_files[self.current_image_index]
             source = os.path.join(self.image_dir, image_file)
             _, bbox_list = run_yolo(source)
-            print("look here", bbox_list)
 
             # Load the image into a QPixmap
             scale_x, scale_y, vertical_offset = self.calculate_scale_and_offset(source)
@@ -285,16 +333,12 @@ class MainWindow(QMainWindow):
                     continue  # Skip this bounding box
 
                 result_string = [s.strip() for s in bbox_str.replace('(', '').replace(')', '').split(',')] #'(left, top, width, height), ID' => '(left, top, width, height)'
-                print("box str here",bbox_str)
-                print("result string here ",result_string)
                 
                 bbox_short = "({}, {}, {}, {})".format(result_string[0], result_string[1], result_string[2], result_string[3])
                 
                 found = False
                 for items in existing_items:
                     if bbox_short in items:
-                        print(items)
-                        print("bbox short here",bbox_short)
                         found = True
                         break
                 if found:
@@ -358,6 +402,10 @@ class MainWindow(QMainWindow):
 
     def remove_label(self):
         # Get the current item from the QListWidget
+
+        if self.double_click_count > 0:
+            self.image_label.rectangles.pop()
+
         item = self.bbox_list_widget.currentItem()
 
         if item:
