@@ -63,6 +63,10 @@ class MainWindow(QMainWindow):
         self.btn_export_label.clicked.connect(self.export_labels)
         self.btn_export_label.setFixedWidth(100)
 
+        self.btn_import_label = QPushButton("Import Labels")
+        self.btn_import_label.clicked.connect(self.import_label)
+        self.btn_import_label.setFixedWidth(100)
+
         self.btn_remove_label = QPushButton("Remove Label")
         self.btn_remove_label.clicked.connect(self.remove_label)
         self.btn_remove_label.setFixedWidth(100)
@@ -102,6 +106,7 @@ class MainWindow(QMainWindow):
         button_layout.addWidget(self.btn_add_label)
         button_layout.addWidget(self.btn_remove_label)
         button_layout.addWidget(self.btn_export_label)
+        button_layout.addWidget(self.btn_import_label)
                 
         # Create a QVBoxLayout for text and list widgets
         text_list_layout = QVBoxLayout()
@@ -161,10 +166,18 @@ class MainWindow(QMainWindow):
             # load the image
             self.load_saved_image(os.path.join(f"saved IDs/ID{self.id}", self.id_image_files[self.id_current_image_index]))
 
-    def load_saved_image(self, img_path): #!
+    # def load_saved_image(self, img_path): #!
+    #     # A new function for loading the image
+    #     pixmap = QPixmap(img_path)
+    #     self.saved_image_label.setPixmap(pixmap)
+    def load_saved_image(self, img_path):
         # A new function for loading the image
         pixmap = QPixmap(img_path)
-        self.saved_image_label.setPixmap(pixmap)
+
+        # Scale pixmap to fit the label, preserving aspect ratio
+        scaled_pixmap = pixmap.scaled(self.saved_image_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        
+        self.saved_image_label.setPixmap(scaled_pixmap)
 
     def browse_folder(self):
         self.image_dir = QFileDialog.getExistingDirectory(self, 'Open directory', '/home')
@@ -175,12 +188,12 @@ class MainWindow(QMainWindow):
 
     def next_image(self):
         if self.image_files:
-            
             self.image_annotations[self.image_files[self.current_image_index]] = [self.bbox_list_widget.item(i).text() for i in range(self.bbox_list_widget.count())]
-           
+            
         if self.image_files and self.current_image_index < len(self.image_files) - 1:
             self.current_image_index += 1
             self.load_image()
+            self.export_labels()
 
     def previous_image(self):
         if self.image_files:
@@ -188,6 +201,18 @@ class MainWindow(QMainWindow):
         if self.image_files and self.current_image_index > 0:
             self.current_image_index -= 1
             self.load_image()
+
+    def import_label(self):
+        with open('annotations.txt', 'r') as f:
+            for line in f:
+                print(line)
+                file, id_, x, y, w, h, _, _, _, _ = line.split(',')
+                if file not in self.image_annotations:
+                    self.image_annotations[file] = [f"({x}, {y}, {w}, {h}), {id_}"]
+                else:
+                    self.image_annotations[file].append(f"({x}, {y}, {w}, {h}), {id_}")
+        self.load_image()
+        pass
 
     def load_image(self):
         if self.image_files:
