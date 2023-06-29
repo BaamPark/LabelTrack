@@ -59,9 +59,9 @@ class MainWindow(QMainWindow):
         self.btn_add_label.clicked.connect(self.add_label)
         self.btn_add_label.setFixedWidth(100)
 
-        self.btn_associate_label = QPushButton("Associate Label")
-        # self.btn_associate_label.clicked.connect()  # Connect to the function that lets you associate labels
-        self.btn_associate_label.setFixedWidth(100)
+        self.btn_export_label = QPushButton("Export Labels")
+        self.btn_export_label.clicked.connect(self.export_labels)
+        self.btn_export_label.setFixedWidth(100)
 
         self.btn_remove_label = QPushButton("Remove Label")
         self.btn_remove_label.clicked.connect(self.remove_label)
@@ -101,7 +101,7 @@ class MainWindow(QMainWindow):
         button_layout.addWidget(self.btn_run_detector)
         button_layout.addWidget(self.btn_add_label)
         button_layout.addWidget(self.btn_remove_label)
-        button_layout.addWidget(self.btn_associate_label)
+        button_layout.addWidget(self.btn_export_label)
                 
         # Create a QVBoxLayout for text and list widgets
         text_list_layout = QVBoxLayout()
@@ -128,6 +128,16 @@ class MainWindow(QMainWindow):
 
         # self.load_saved_image("saved IDs/ID124/frameframe_num_videoview.jpg")
 
+    def export_labels(self):
+        #self.image_annotations[image_file][]
+        #{'160418_above-022400.jpg': ['(339, 124, 320, 588), 123'], '170804-above bed-009600.jpg': ['(278, 263, 208, 460), 123', '(608, 373, 244, 282), 124', '(120, 313, 136, 174)'], '170814-above bed-064000.jpg': ['(665, 162, -409, 325)', '(642, 588, 180, 179)', '(796, 315, 155, 138)']}
+        with open('annotations.txt', 'w') as f:
+            for file, annotations in self.image_annotations.items():
+                for annotation in annotations:
+                    bbox, id_ = annotation.rsplit(',', 1)
+                    x, y, w, h = map(int, bbox.strip('()').split(','))
+                    f.write(f"{file},{id_.strip()},{x},{y},{w},{h},1,-1,-1,-1\n")
+    
     def enter_id(self):
         self.id = self.id_widget.toPlainText()
         id_folder = f"saved IDs/ID{self.id}"
@@ -163,41 +173,18 @@ class MainWindow(QMainWindow):
             self.current_image_index = -1
             self.next_image()
 
-    # def next_image(self):
-    #     if self.image_files and self.current_image_index < len(self.image_files) - 1:
-    #         self.current_image_index += 1
-    #         self.load_image()
-
-    # def previous_image(self):
-    #     if self.image_files and self.current_image_index > 0:
-    #         self.current_image_index -= 1
-    #         self.load_image()
-
-    # def load_image(self):
-    #     if self.image_files:
-    #         image_file = self.image_files[self.current_image_index]
-    #         pixmap = QPixmap(os.path.join(self.image_dir, image_file))
-    #         scaled_pixmap = pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio) #! it fit the image to GUI so it doesn't show the original size.
-    #         self.image_label.setPixmap(scaled_pixmap)
-    #         self.image_label.rectangles.clear() # Clear the rectangles list when a new image is loaded
-    #         self.bbox_list_widget.clear()
-
     def next_image(self):
         if self.image_files:
             
-            self.image_annotations[self.image_files[self.current_image_index]] = {
-                "bounding_boxes": [self.bbox_list_widget.item(i).text() for i in range(self.bbox_list_widget.count())]
-            }
-        print("look herer", self.image_annotations[self.image_files[self.current_image_index]])
+            self.image_annotations[self.image_files[self.current_image_index]] = [self.bbox_list_widget.item(i).text() for i in range(self.bbox_list_widget.count())]
+           
         if self.image_files and self.current_image_index < len(self.image_files) - 1:
             self.current_image_index += 1
             self.load_image()
 
     def previous_image(self):
         if self.image_files:
-            self.image_annotations[self.image_files[self.current_image_index]] = {
-                "bounding_boxes": [self.bbox_list_widget.item(i).text() for i in range(self.bbox_list_widget.count())]
-            }
+            self.image_annotations[self.image_files[self.current_image_index]] = [self.bbox_list_widget.item(i).text() for i in range(self.bbox_list_widget.count())]
         if self.image_files and self.current_image_index > 0:
             self.current_image_index -= 1
             self.load_image()
@@ -212,7 +199,7 @@ class MainWindow(QMainWindow):
             self.image_label.rectangles.clear() # Clear the rectangles list when a new image is loaded
             if image_file in self.image_annotations:
                 self.bbox_list_widget.clear()
-                for bbox in self.image_annotations[image_file]["bounding_boxes"]:
+                for bbox in self.image_annotations[image_file]:
                     self.bbox_list_widget.addItem(bbox)
                     splited_string = [s.strip() for s in bbox.replace('(', '').replace(')', '').split(',')]
                     if len(splited_string) == 4:
@@ -226,56 +213,10 @@ class MainWindow(QMainWindow):
             else:
                 self.bbox_list_widget.clear()
 
-    # def next_image(self):
-    #     # Save current image annotations before loading next image
-    #     if self.image_files:
-    #         self.image_annotations[self.image_files[self.current_image_index]] = {
-    #             "bounding_boxes": self.image_label.rectangles, 
-    #             "id": self.id_widget.toPlainText(), 
-    #             "text": self.text_widget.toPlainText()
-    #         }
-    #     if self.image_files and self.current_image_index < len(self.image_files) - 1:
-    #         self.current_image_index += 1
-    #         self.load_image()
-
-    # def previous_image(self):
-    #     # Save current image annotations before loading previous image
-    #     if self.image_files:
-    #         self.image_annotations[self.image_files[self.current_image_index]] = {
-    #             "bounding_boxes": self.image_label.rectangles, 
-    #             "id": self.id_widget.toPlainText(), 
-    #             "text": self.text_widget.toPlainText()
-    #         }
-    #     if self.image_files and self.current_image_index > 0:
-    #         self.current_image_index -= 1
-    #         self.load_image()
-
-    # def load_image(self):
-    #     if self.image_files:
-    #         image_file = self.image_files[self.current_image_index]
-    #         pixmap = QPixmap(os.path.join(self.image_dir, image_file))
-    #         scaled_pixmap = pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio) #! it fit the image to GUI so it doesn't show the original size.
-    #         self.image_label.setPixmap(scaled_pixmap)
-
-    #         # Load annotations for the new image
-    #         if image_file in self.image_annotations:
-    #             print(self.image_annotations)
-    #             annotations = self.image_annotations[image_file]
-    #             self.image_label.rectangles = annotations["bounding_boxes"]
-    #             self.id_widget.setText(annotations["id"])
-    #             self.text_widget.setText(annotations["text"])
-    #             self.bbox_list_widget.clear()
-    #             for bbox in self.image_label.rectangles:
-    #                 self.bbox_list_widget.addItem(f"{bbox[0]}, {bbox[1]}, {bbox[2]}, {bbox[3]}")
-    #         else:
-    #             self.image_label.rectangles.clear() # Clear the rectangles list when a new image is loaded
-    #             self.bbox_list_widget.clear()
-    #             self.id_widget.clear()
-    #             self.text_widget.clear()      
-
     def run_detector(self):
         from yolo import run_yolo
         from Bbox import Bbox
+
         if self.image_files:
             image_file = self.image_files[self.current_image_index]
             source = os.path.join(self.image_dir, image_file)
@@ -309,13 +250,80 @@ class MainWindow(QMainWindow):
                 width = int(org_width * scale_x)
                 height = int(org_height * scale_y)
 
-                # Add the bounding box to the image_label's rectangles list and to the list widget
+                # Check if this bounding box already exists in the list widget
+                bbox_str = str((left, top, width, height))
+                existing_items = [self.bbox_list_widget.item(i).text() for i in range(self.bbox_list_widget.count())]
                 rect = (QPoint(left, top), QPoint(left + width, top + height))
                 self.image_label.rectangles.append(rect)
-                self.bbox_list_widget.addItem(str((left, top, width, height)))  # add the coordinates to the list widget
+
+                if bbox_str in existing_items:
+                    continue  # Skip this bounding box
+
+                result_string = [s.strip() for s in bbox_str.replace('(', '').replace(')', '').split(',')] #'(left, top, width, height), ID' => '(left, top, width, height)'
+                print("box str here",bbox_str)
+                print("result string here ",result_string)
+                
+                bbox_short = "({}, {}, {}, {})".format(result_string[0], result_string[1], result_string[2], result_string[3])
+                
+                found = False
+                for items in existing_items:
+                    if bbox_short in items:
+                        print(items)
+                        print("bbox short here",bbox_short)
+                        found = True
+                        break
+                if found:
+                    continue
+                # Add the bounding box to the image_label's rectangles list and to the list widget
+                
+                self.bbox_list_widget.addItem(bbox_str)
 
             pixmap = pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio)
             self.image_label.update()
+
+    # def run_detector(self):
+    #     from yolo import run_yolo
+    #     from Bbox import Bbox
+    #     if self.image_files:
+    #         image_file = self.image_files[self.current_image_index]
+    #         source = os.path.join(self.image_dir, image_file)
+    #         _, bbox_list = run_yolo(source)
+    #         print("look here", bbox_list)
+
+    #         # Load the image into a QPixmap
+    #         scale_x, scale_y, vertical_offset = self.calculate_scale_and_offset(source)
+
+    #         pixmap = QPixmap(source)
+    #         # Scale the QPixmap to fit the QLabel
+    #         pixmap = pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio)
+    #         scale_x, scale_y, vertical_offset = self.calculate_scale_and_offset(source)
+
+    #         # Update QLabel
+    #         self.image_label.setPixmap(pixmap)
+
+    #         # Clear the rectangles list of the image_label
+    #         self.image_label.rectangles = [] 
+
+    #         for bb_left, bb_top, bb_width, bb_height in bbox_list:
+    #             # Convert bounding box values to int
+    #             org_left = int(bb_left)
+    #             org_top = int(bb_top)
+    #             org_width = int(bb_width)
+    #             org_height = int(bb_height)
+
+    #             # Convert the coordinates to the QLabel's coordinate system
+    #             left = int(org_left * scale_x)
+    #             top = int((org_top * scale_y) + vertical_offset)
+    #             width = int(org_width * scale_x)
+    #             height = int(org_height * scale_y)
+
+    #             # Add the bounding box to the image_label's rectangles list and to the list widget
+    #             rect = (QPoint(left, top), QPoint(left + width, top + height))
+    #             self.image_label.rectangles.append(rect)
+    #             self.bbox_list_widget.addItem(str((left, top, width, height)))  # add the coordinates to the list widget
+
+    #         pixmap = pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio)
+    #         self.image_label.update()
 
     def add_label(self):
         if self.btn_add_label.isChecked():
@@ -376,7 +384,7 @@ class MainWindow(QMainWindow):
             vertices = xyhw_to_xyxy(vertices)
             right, bottom = vertices[2], vertices[3]
 
-            capture_bbox(vertices, source, scale_x, scale_y, vertical_offset, new_text, self.current_image_index)
+            capture_bbox(vertices, source, scale_x, scale_y, vertical_offset, new_text, self.current_image_index, self.image_dir)
 
             # Update the rectangles list with the bounding box ID
             # it has use for loop because whenever you update iamge_label, the paintEvent work same jobs again.
@@ -412,9 +420,8 @@ def xyhw_to_xyxy(coords, reverse=False):
     return coords
 
 #this function will be called when text edit button is pressed
-def capture_bbox(bbox, source_path, scale_x, scale_y, vertical_offset, id, frame_num):
+def capture_bbox(bbox, source_path, scale_x, scale_y, vertical_offset, id, frame_num, image_dir):
     import cv2
-    print(bbox)
     # Read the image into a numpy array
     source_image = cv2.imread(source_path)
 
@@ -429,7 +436,7 @@ def capture_bbox(bbox, source_path, scale_x, scale_y, vertical_offset, id, frame
 
     os.makedirs("saved IDs/ID{}".format(id), exist_ok=True)
 
-    output_path = "saved IDs/ID{}/frame{}_video{}.jpg".format(id, frame_num, "view")  # replace with your desired output path
+    output_path = "saved IDs/ID{}/frame{}_{}.jpg".format(id, frame_num, image_dir[-2:])  # replace with your desired output path
 
     cv2.imwrite(output_path, bbox_image)
 

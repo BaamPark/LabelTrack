@@ -2,7 +2,7 @@ from ultralytics import YOLO
 import cv2
 
 def run_yolo(source):
-    model = YOLO('yolov8s.pt')
+    model = YOLO('best.pt')
     results = model(source)
     frame = results[0].orig_img
     bbox_list = []
