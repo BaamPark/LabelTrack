@@ -4,19 +4,20 @@ from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton, QVBoxLayout,
 from PyQt5.QtGui import QPixmap, QPainter, QPen, QBrush, QColor, QPolygon
 from PyQt5.QtCore import Qt, QRect
 from PyQt5.QtWidgets import QSizePolicy, QListWidget, QTextEdit
-from PyQt5.QtGui import QImage
+from PyQt5.QtGui import QImage, QFont
 from Clickablebox import ClickableImageLabel
 from PyQt5.QtWidgets import QScrollArea
 from PyQt5.QtGui import QPalette
 from PyQt5.QtCore import QPoint
 from PyQt5.QtWidgets import QMessageBox
+from PyQt5.QtGui import QKeySequence
+from PyQt5.QtWidgets import QShortcut
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
 
         self.setWindowTitle("Image Annotation Tool")
-        
 
         self.image_dir = None
         self.image_annotations = {}
@@ -28,6 +29,7 @@ class MainWindow(QMainWindow):
         self.image_label = QLabel(self)
         self.image_data = None # this should hold the current image data
         self.bbox_list_widget = QListWidget() #! list widget
+        self.bbox_list_widget.itemDoubleClicked.connect(self.handle_item_double_clicked)
         self.bbox_list_widget.setFixedWidth(200)
         self.text_widget = QTextEdit()  # New text widget
         self.text_widget.setFixedWidth(200)  # Set a fixed height
@@ -36,10 +38,21 @@ class MainWindow(QMainWindow):
         self.id_widget = QTextEdit()  # New text widget
         self.id_widget.setFixedWidth(200)  # Set a fixed height
         self.id_widget.setFixedHeight(25)
+
+        self.image_list_widget = QListWidget()  # The new QListWidget
+        self.image_list_widget.itemDoubleClicked.connect(self.load_image_from_list)  # Connect the itemClicked signal to the load_image_from_list method
+        self.image_list_widget.setFixedWidth(200)
+
+        font = QFont()
+        font.setPointSize(13) 
+        self.file_label = QLabel()
+        self.file_label.setText("Current file: None")  # Initial text
+        self.file_label.setFixedHeight(20)
+        self.file_label.setFont(font)
+        # self.file_label.setStyleSheet("border: 1px solid black;")
+        self.file_label.setAlignment(Qt.AlignBottom)
         
         self.resize(1400, 1000)
-
-        self.bbox_list_widget.itemDoubleClicked.connect(self.handle_item_double_clicked)
 
         # Create a QPushButton
         self.btn_browse = QPushButton("Browse")
@@ -49,10 +62,14 @@ class MainWindow(QMainWindow):
         self.btn_next = QPushButton("Next")
         self.btn_next.clicked.connect(self.next_image)
         self.btn_next.setFixedWidth(100)
+        next_shorcut = QShortcut(QKeySequence('d'), self)
+        next_shorcut.activated.connect(self.next_image)
 
         self.btn_prev = QPushButton("Previous")
         self.btn_prev.clicked.connect(self.previous_image)
         self.btn_prev.setFixedWidth(100)
+        prev_shorcut = QShortcut(QKeySequence('a'), self)
+        prev_shorcut.activated.connect(self.previous_image)
 
         self.btn_run_detector = QPushButton("Run Detector")
         self.btn_run_detector.clicked.connect(self.run_detector)  # Connect to the function that runs the YOLO detector
@@ -64,7 +81,7 @@ class MainWindow(QMainWindow):
         self.btn_add_label.setFixedWidth(100)
 
         self.btn_export_label = QPushButton("Export Labels")
-        self.btn_export_label.clicked.connect(self.export_labels)
+        self.btn_export_label.clicked.connect(lambda: self.export_labels(True)) #creates a new function that calls self.export_labels(True) whenever it's called.
         self.btn_export_label.setFixedWidth(100)
 
         self.btn_import_label = QPushButton("Import Labels")
@@ -74,6 +91,8 @@ class MainWindow(QMainWindow):
         self.btn_remove_label = QPushButton("Remove Label")
         self.btn_remove_label.clicked.connect(self.remove_label)
         self.btn_remove_label.setFixedWidth(100)
+        remove_label_shortcut = QShortcut(QKeySequence('r'), self)
+        remove_label_shortcut.activated.connect(self.remove_label)
 
         self.btn_edit_text = QPushButton("Edit Text")  # Create the button
         self.btn_edit_text.clicked.connect(self.edit_text)  # Connect it to the function that will handle the button click
@@ -111,12 +130,24 @@ class MainWindow(QMainWindow):
         button_layout.addWidget(self.btn_remove_label)
         button_layout.addWidget(self.btn_export_label)
         button_layout.addWidget(self.btn_import_label)
-                
+        
+        # Create a QHBoxLayout for the file label to center it
+        file_label_layout = QHBoxLayout()
+        file_label_layout.addStretch()
+        file_label_layout.addWidget(self.file_label)
+        file_label_layout.addStretch()
+        
+        file_image_layout = QVBoxLayout()
+        file_image_layout.addLayout(file_label_layout)  # Use the new layout
+        file_image_layout.addWidget(self.image_label)
+        file_image_layout.setSpacing(0)
+
         # Create a QVBoxLayout for text and list widgets
         text_list_layout = QVBoxLayout()
         text_list_layout.addWidget(self.text_widget)
         text_list_layout.addWidget(self.btn_edit_text)
         text_list_layout.addWidget(self.bbox_list_widget)
+        text_list_layout.addWidget(self.image_list_widget) #!
         
         text_list_layout.addWidget(self.id_widget)
         text_list_layout.addWidget(self.btn_enter_id)
@@ -128,41 +159,52 @@ class MainWindow(QMainWindow):
         # Create a QHBoxLayout instance for the overall layout
         layout = QHBoxLayout()
         layout.addLayout(button_layout)
-        layout.addWidget(self.image_label)
+        layout.addLayout(file_image_layout)
         layout.addLayout(text_list_layout)
 
         main_widget = QWidget()
         main_widget.setLayout(layout)
         self.setCentralWidget(main_widget)
 
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Left:
+            self.previous_image()
+        elif event.key() == Qt.Key_Right:
+            self.next_image()
+
     def handle_item_double_clicked(self, item):
         if self.image_label.clicked_rect:
-            print("double clicked more than one")
-            print("item will be removed from rectangle list:", self.image_label.clicked_rect[-1])
             self.image_label.clicked_rect.pop()
             self.image_label.update()
         self.highlight_bbox(item.text())
-        print(f"Item '{item.text()}' was double clicked!")
 
     
     def highlight_bbox(self, bbox):
         splited_string = [s.strip() for s in bbox.replace('(', '').replace(')', '').split(',')]
-        print("splited string:", splited_string)
         if len(splited_string) == 4:
             x, y, w, h = map(int, bbox.replace('(', '').replace(')', '').split(','))
             rect = (QPoint(x, y), QPoint(x + w, y + h), '', 'red')
             self.image_label.clicked_rect.append(rect)
-            print("appended:", self.image_label.clicked_rect[-1])
         elif len(splited_string) == 5:
             x, y, w, h, id = map(int, bbox.replace('(', '').replace(')', '').split(','))
             rect = (QPoint(x, y), QPoint(x + w, y + h), id, 'red')
             self.image_label.clicked_rect.append(rect)
-            print("appended:", self.image_label.clicked_rect[-1])
 
         self.image_label.update()
 
-    def export_labels(self):
-        with open('annotations.txt', 'w') as f:
+    def export_labels(self, btn=False):
+        if btn:
+            options = QFileDialog.Options()
+            options |= QFileDialog.DontUseNativeDialog
+            fileName, _ = QFileDialog.getSaveFileName(self, "Save Label File", "", "Text Files (*.txt)", options=options)
+            if fileName:
+                filename = fileName
+            else:
+                filename = 'annotations.txt'
+        else:
+            filename = 'annotations.txt'
+
+        with open(filename, 'w') as f:
             for file, annotations in self.image_annotations.items():
                 for annotation in annotations:
                     splited_string = [s.strip() for s in annotation.replace('(', '').replace(')', '').split(',')]
@@ -207,12 +249,26 @@ class MainWindow(QMainWindow):
         scaled_pixmap = pixmap.scaled(self.saved_image_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
         self.saved_image_label.setPixmap(scaled_pixmap)
 
+    def load_image_from_list(self, item):
+        # This new method is called when an item in the QListWidget is clicked
+        # The clicked item is passed as an argument to the method
+        # Get the text of the item (which is the image file name)
+        image_file = item.text()
+        # Set the current image index to the index of the clicked image file
+        self.current_image_index = self.image_files.index(image_file)
+        # Load the image
+        self.load_image()
+
     def browse_folder(self):
         self.image_dir = QFileDialog.getExistingDirectory(self, 'Open directory', '/home')
         if self.image_dir:
             self.image_files = sorted([f for f in os.listdir(self.image_dir) if f.endswith(('.png', '.jpg', '.jpeg'))])
             self.current_image_index = -1
             self.next_image()
+
+            #add the image file names to the new list widget
+            for image_file in self.image_files:
+                self.image_list_widget.addItem(image_file)
 
     def next_image(self):
         if self.image_files:
@@ -231,25 +287,30 @@ class MainWindow(QMainWindow):
             self.load_image()
 
     def import_label(self):
-        with open('annotations (copy).txt', 'r') as f:
-            for line in f:
-                print(line)
-                file, id_, x, y, w, h, _, _, _, _ = line.split(',')
-                if file not in self.image_annotations:
-                    self.image_annotations[file] = [f"({x}, {y}, {w}, {h}), {id_}"]
-                else:
-                    self.image_annotations[file].append(f"({x}, {y}, {w}, {h}), {id_}")
-        self.load_image()
-        pass
+        options = QFileDialog.Options()
+        options |= QFileDialog.ReadOnly
+        file_name, _ = QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileName()", "","Text Files (*.txt)", options=options)
+        if file_name:
+            with open(file_name, 'r') as f:
+                for line in f:
+                    file, id_, x, y, w, h, _, _, _, _ = line.split(',')
+                    if file not in self.image_annotations:
+                        self.image_annotations[file] = [f"({x}, {y}, {w}, {h}), {id_}"]
+                    else:
+                        self.image_annotations[file].append(f"({x}, {y}, {w}, {h}), {id_}")
+            self.load_image()
 
     def load_image(self):
+        print(self.image_label.rectangles)
         self.image_label.clicked_rect = []
         if self.image_files:
             image_file = self.image_files[self.current_image_index]
+            self.file_label.setText(f"Current file: {image_file}")
             pixmap = QPixmap(os.path.join(self.image_dir, image_file))
             scaled_pixmap = pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio) 
             self.image_label.setPixmap(scaled_pixmap)
             self.image_label.rectangles.clear() # Clear the rectangles list when a new image is loaded
+            print("after clear", self.image_label.rectangles)
             if image_file in self.image_annotations:
                 self.bbox_list_widget.clear()
                 for bbox in self.image_annotations[image_file]:
@@ -260,8 +321,9 @@ class MainWindow(QMainWindow):
                         rect = (QPoint(x, y), QPoint(x + w, y + h))
                     else:
                         x, y, w, h, id = map(int, splited_string)
-                        rect = (QPoint(x, y), QPoint(x + w, y + h), id)
+                        rect = (QPoint(x, y), QPoint(x + w, y + h), int(id))
                     self.image_label.rectangles.append(rect)
+                    print("after append", self.image_label.rectangles)
 
             else:
                 self.bbox_list_widget.clear()
@@ -344,7 +406,7 @@ class MainWindow(QMainWindow):
                 
                 coords = [int(part.strip()) for part in splited_string]
                 coords = xyhw_to_xyxy(coords)
-                rect = (QPoint(coords[0], coords[1]), QPoint(coords[2], coords[3]), id)
+                rect = (QPoint(coords[0], coords[1]), QPoint(coords[2], coords[3]), int(id))
 
             else:
                 coords = [int(part.strip()) for part in splited_string]
@@ -352,6 +414,7 @@ class MainWindow(QMainWindow):
                 rect = (QPoint(coords[0], coords[1]), QPoint(coords[2], coords[3]))
 
             self.bbox_list_widget.takeItem(self.bbox_list_widget.row(item))
+            print("rect to be removed", rect)
             self.image_label.rectangles.remove(rect)
 
             # Repaint the QLabel
