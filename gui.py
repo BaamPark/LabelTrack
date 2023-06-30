@@ -17,7 +17,7 @@ class MainWindow(QMainWindow):
 
         self.setWindowTitle("Image Annotation Tool")
         
-        self.double_click_count = 0
+
         self.image_dir = None
         self.image_annotations = {}
         self.image_files = []
@@ -135,44 +135,33 @@ class MainWindow(QMainWindow):
         main_widget.setLayout(layout)
         self.setCentralWidget(main_widget)
 
-        # self.load_saved_image("saved IDs/ID124/frameframe_num_videoview.jpg")
-
     def handle_item_double_clicked(self, item):
-        if self.double_click_count > 0:
+        if self.image_label.clicked_rect:
             print("double clicked more than one")
-            print("item will be removed from rectangle list:", self.image_label.rectangles[-1])
-            self.image_label.rectangles.pop()
+            print("item will be removed from rectangle list:", self.image_label.clicked_rect[-1])
+            self.image_label.clicked_rect.pop()
             self.image_label.update()
         self.highlight_bbox(item.text())
-        self.double_click_count += 1
         print(f"Item '{item.text()}' was double clicked!")
 
     
     def highlight_bbox(self, bbox):
-        # Clear all previous highlights
-        # for rect in self.image_label.rectangles:
-        #     rect[2] = None  # Remove the id, effectively removing the highlight
-        # Highlight the specified bounding box
         splited_string = [s.strip() for s in bbox.replace('(', '').replace(')', '').split(',')]
         print("splited string:", splited_string)
         if len(splited_string) == 4:
             x, y, w, h = map(int, bbox.replace('(', '').replace(')', '').split(','))
             rect = (QPoint(x, y), QPoint(x + w, y + h), '', 'red')
-            self.image_label.rectangles.append(rect)
-            print("appended:", self.image_label.rectangles[-1])
+            self.image_label.clicked_rect.append(rect)
+            print("appended:", self.image_label.clicked_rect[-1])
         elif len(splited_string) == 5:
             x, y, w, h, id = map(int, bbox.replace('(', '').replace(')', '').split(','))
             rect = (QPoint(x, y), QPoint(x + w, y + h), id, 'red')
-            self.image_label.rectangles.append(rect)
-            print("appended:", self.image_label.rectangles[-1])
+            self.image_label.clicked_rect.append(rect)
+            print("appended:", self.image_label.clicked_rect[-1])
 
         self.image_label.update()
-        # Refresh the image to show the highlight
-        # self.load_image()
 
     def export_labels(self):
-        #self.image_annotations[image_file][]
-        #{'160418_above-022400.jpg': ['(339, 124, 320, 588), 123'], '170804-above bed-009600.jpg': ['(278, 263, 208, 460), 123', '(608, 373, 244, 282), 124', '(120, 313, 136, 174)'], '170814-above bed-064000.jpg': ['(665, 162, -409, 325)', '(642, 588, 180, 179)', '(796, 315, 155, 138)']}
         with open('annotations.txt', 'w') as f:
             for file, annotations in self.image_annotations.items():
                 for annotation in annotations:
@@ -194,7 +183,6 @@ class MainWindow(QMainWindow):
         self.id = self.id_widget.toPlainText()
         id_folder = f"saved IDs/ID{self.id}"
         if os.path.isdir(id_folder):
-            # get all image files in the directory, assuming they are jpg
             self.id_image_files = sorted([f for f in os.listdir(id_folder) if f.endswith(".jpg")])
             if self.id_image_files:  # if there are images in the directory
                 self.id_current_image_index = 0
@@ -213,17 +201,10 @@ class MainWindow(QMainWindow):
             # load the image
             self.load_saved_image(os.path.join(f"saved IDs/ID{self.id}", self.id_image_files[self.id_current_image_index]))
 
-    # def load_saved_image(self, img_path): #!
-    #     # A new function for loading the image
-    #     pixmap = QPixmap(img_path)
-    #     self.saved_image_label.setPixmap(pixmap)
     def load_saved_image(self, img_path):
         # A new function for loading the image
         pixmap = QPixmap(img_path)
-
-        # Scale pixmap to fit the label, preserving aspect ratio
         scaled_pixmap = pixmap.scaled(self.saved_image_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
-        
         self.saved_image_label.setPixmap(scaled_pixmap)
 
     def browse_folder(self):
@@ -250,7 +231,7 @@ class MainWindow(QMainWindow):
             self.load_image()
 
     def import_label(self):
-        with open('annotations.txt', 'r') as f:
+        with open('annotations (copy).txt', 'r') as f:
             for line in f:
                 print(line)
                 file, id_, x, y, w, h, _, _, _, _ = line.split(',')
@@ -262,14 +243,12 @@ class MainWindow(QMainWindow):
         pass
 
     def load_image(self):
-        self.double_click_count = 0
-        print("current double click count status", self.double_click_count)
+        self.image_label.clicked_rect = []
         if self.image_files:
             image_file = self.image_files[self.current_image_index]
             pixmap = QPixmap(os.path.join(self.image_dir, image_file))
             scaled_pixmap = pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio) 
             self.image_label.setPixmap(scaled_pixmap)
-
             self.image_label.rectangles.clear() # Clear the rectangles list when a new image is loaded
             if image_file in self.image_annotations:
                 self.bbox_list_widget.clear()
@@ -295,10 +274,7 @@ class MainWindow(QMainWindow):
             image_file = self.image_files[self.current_image_index]
             source = os.path.join(self.image_dir, image_file)
             _, bbox_list = run_yolo(source)
-
-            # Load the image into a QPixmap
             scale_x, scale_y, vertical_offset = self.calculate_scale_and_offset(source)
-
             pixmap = QPixmap(source)
             # Scale the QPixmap to fit the QLabel
             pixmap = pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio)
@@ -343,56 +319,10 @@ class MainWindow(QMainWindow):
                         break
                 if found:
                     continue
-                # Add the bounding box to the image_label's rectangles list and to the list widget
-                
                 self.bbox_list_widget.addItem(bbox_str)
 
             pixmap = pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio)
             self.image_label.update()
-
-    # def run_detector(self):
-    #     from yolo import run_yolo
-    #     from Bbox import Bbox
-    #     if self.image_files:
-    #         image_file = self.image_files[self.current_image_index]
-    #         source = os.path.join(self.image_dir, image_file)
-    #         _, bbox_list = run_yolo(source)
-    #         print("look here", bbox_list)
-
-    #         # Load the image into a QPixmap
-    #         scale_x, scale_y, vertical_offset = self.calculate_scale_and_offset(source)
-
-    #         pixmap = QPixmap(source)
-    #         # Scale the QPixmap to fit the QLabel
-    #         pixmap = pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio)
-    #         scale_x, scale_y, vertical_offset = self.calculate_scale_and_offset(source)
-
-    #         # Update QLabel
-    #         self.image_label.setPixmap(pixmap)
-
-    #         # Clear the rectangles list of the image_label
-    #         self.image_label.rectangles = [] 
-
-    #         for bb_left, bb_top, bb_width, bb_height in bbox_list:
-    #             # Convert bounding box values to int
-    #             org_left = int(bb_left)
-    #             org_top = int(bb_top)
-    #             org_width = int(bb_width)
-    #             org_height = int(bb_height)
-
-    #             # Convert the coordinates to the QLabel's coordinate system
-    #             left = int(org_left * scale_x)
-    #             top = int((org_top * scale_y) + vertical_offset)
-    #             width = int(org_width * scale_x)
-    #             height = int(org_height * scale_y)
-
-    #             # Add the bounding box to the image_label's rectangles list and to the list widget
-    #             rect = (QPoint(left, top), QPoint(left + width, top + height))
-    #             self.image_label.rectangles.append(rect)
-    #             self.bbox_list_widget.addItem(str((left, top, width, height)))  # add the coordinates to the list widget
-
-    #         pixmap = pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio)
-    #         self.image_label.update()
 
     def add_label(self):
         if self.btn_add_label.isChecked():
@@ -401,10 +331,9 @@ class MainWindow(QMainWindow):
             self.image_label.drawing = False
 
     def remove_label(self):
-        # Get the current item from the QListWidget
-
-        if self.double_click_count > 0:
-            self.image_label.rectangles.pop()
+        #remove highlighted rectangle when loading image
+        if self.image_label.clicked_rect:
+            self.image_label.clicked_rect.pop()
 
         item = self.bbox_list_widget.currentItem()
 
@@ -422,10 +351,7 @@ class MainWindow(QMainWindow):
                 coords = xyhw_to_xyxy(coords)
                 rect = (QPoint(coords[0], coords[1]), QPoint(coords[2], coords[3]))
 
-            # Remove the item from QListWidget
             self.bbox_list_widget.takeItem(self.bbox_list_widget.row(item))
-
-            # Remove the corresponding rectangle from self.image_label.rectangles
             self.image_label.rectangles.remove(rect)
 
             # Repaint the QLabel
@@ -480,11 +406,11 @@ class MainWindow(QMainWindow):
         scale_x = pixmap.width() / image_width
         scale_y = pixmap.height() / image_height
 
-        # Calculate the vertical offset if any
         vertical_offset = (self.image_label.height() - pixmap.height()) / 2
-
         return scale_x, scale_y, vertical_offset
 
+
+#external function
 def xyhw_to_xyxy(coords, reverse=False):
     if not reverse:
         coords[2], coords[3] = coords[2] + coords[0], coords[3] + coords[1]
@@ -503,6 +429,15 @@ def capture_bbox(bbox, source_path, scale_x, scale_y, vertical_offset, id, frame
                      int((bbox[1] - vertical_offset) / scale_y),  # top
                      int(bbox[2] / scale_x),  # right
                      int((bbox[3] - vertical_offset) / scale_y)]  # bottom
+    
+    if original_bbox[0] < 0:
+        original_bbox[0] = 0
+    if original_bbox[1] < 0:
+        original_bbox[1] = 0
+    if original_bbox[2] > source_image.shape[1]:
+        original_bbox[2] = source_image.shape[1]
+    if original_bbox[3] > source_image.shape[0]:
+        original_bbox[3] = source_image.shape[0]
 
     # Crop the bounding box from the original image
     bbox_image = source_image[original_bbox[1]:original_bbox[3], original_bbox[0]:original_bbox[2]]

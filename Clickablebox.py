@@ -55,10 +55,22 @@ class ClickableImageLabel(QLabel):
                 
                 # Draw the text at the top center of the bounding box
                 painter.drawText(int(center_x - 5), int(rect[0].y() - 5), str(bbox_id))  # The "-5" is for adjusting the position of the text
-            if 'red' in rect:
-                pen = QPen(Qt.red, 3)
-                painter.setPen(pen)
             painter.drawRect(QRect(rect[0], rect[1]))
+
+        for rect in self.clicked_rect:
+            pen = QPen(Qt.red, 3)
+            painter.setPen(pen)
+            if len(rect) == 3:  # Check if this rectangle has an ID
+                bbox_id = rect[2]
+                print(bbox_id)
+                
+                # Calculate center x coordinate of the bounding box
+                center_x = rect[0].x() + ((rect[1].x() - rect[0].x()) / 2)
+                
+                # Draw the text at the top center of the bounding box
+                painter.drawText(int(center_x - 5), int(rect[0].y() - 5), str(bbox_id))  # The "-5" is for adjusting the position of the text
+            painter.drawRect(QRect(rect[0], rect[1]))
+            
         painter.end()
             
     # def paintEvent(self, event):
