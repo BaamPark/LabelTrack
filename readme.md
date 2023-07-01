@@ -1,0 +1,35 @@
+<!-- write a readme.md file -->
+# Image Annotation Tool
+
+This is a Python application that serves as an image annotation tool. It allows users to browse through a directory of images, add labels to specific regions of interest (ROIs) within the images, and export the annotations to a text file.
+
+## Requirements
+
+- Python 3.x
+- PyQt5
+- OpenCV
+
+## Usage
+
+1. Run the `main.py` script to launch the application.
+2. Click on the "Browse" button to select a directory containing the images you want to annotate.
+3. Use the "Next" and "Previous" buttons to navigate through the images.
+4. To add a label to an ROI, click on the "Add Label" button and then click and drag on the image to define the bounding box of the ROI. Enter the label text in the text widget and click "Enter ID" to save the label.
+5. To edit the label text, select the label from the list widget and click the "Edit Text" button. Make the necessary changes in the text widget and click "Enter ID" to save the changes.
+6. To remove a label, select it from the list widget and click the "Remove Label" button.
+7. To export the annotations to a text file, click on the "Export Labels" button. You will be prompted to choose a file name and location for the exported file.
+8. To import existing annotations from a text file, click on the "Import Labels" button. Select the desired text file containing the annotations.
+9. To run the YOLO object detection algorithm on the annotated images, click on the "Run Detector" button. This requires the `yolo.py` script to be present in the same directory.
+
+## Additional Features
+
+- The application supports keyboard shortcuts for navigating through the images. Press "d" to go to the next image and "a" to go to the previous image.
+- The application allows users to enter an ID and load previously saved images associated with that ID. Use the "Next ID" and "Prev ID" buttons to navigate through the saved images.
+
+## Saved IDs
+
+The application creates a folder named "saved IDs" in the current directory to store images associated with specific IDs. Each ID has its own subfolder within the "saved IDs" folder. The images are saved in the format "frame{frame_num}_{image_dir[-2:]}.jpg".
+
+## Note
+
+Please make sure to install the required dependencies before running the application.
