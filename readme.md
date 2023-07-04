@@ -1,4 +1,3 @@
-<!-- write a readme.md file -->
 # Image Annotation Tool
 
 This is a Python application that serves as an image annotation tool. It allows users to browse through a directory of images, add labels to specific regions of interest (ROIs) within the images, and export the annotations to a text file.
@@ -8,6 +7,7 @@ This is a Python application that serves as an image annotation tool. It allows 
 - Python 3.x
 - PyQt5
 - OpenCV
+- Ultralytics (YOLO v8)
 
 ## Usage
 
@@ -31,5 +31,4 @@ This is a Python application that serves as an image annotation tool. It allows 
 The application creates a folder named "saved IDs" in the current directory to store images associated with specific IDs. Each ID has its own subfolder within the "saved IDs" folder. The images are saved in the format "frame{frame_num}_{image_dir[-2:]}.jpg".
 
 ## Note
-
-Please make sure to install the required dependencies before running the application.
+- Resize button that resize the bounding box will be 
