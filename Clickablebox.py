@@ -1,8 +1,3 @@
-# from PyQt5.QtWidgets import QLabel
-# from PyQt5.QtGui import QPainter, QColor
-# from PyQt5.QtCore import Qt
-# from Bbox import BBox
-
 from PyQt5.QtCore import Qt, QRect
 from PyQt5.QtGui import QPainter, QPen
 from PyQt5.QtWidgets import QLabel

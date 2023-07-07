@@ -23,8 +23,6 @@ class MainWindow(QMainWindow):
         self.image_annotations = {}
         self.image_files = []
         self.current_image_index = -1
-        self.bboxes = []
-        self.selected_bbox = None
         self.resizing = False
         self.image_label = QLabel(self)
         self.image_data = None # this should hold the current image data
@@ -265,6 +263,8 @@ class MainWindow(QMainWindow):
             self.image_files = sorted([f for f in os.listdir(self.image_dir) if f.endswith(('.png', '.jpg', '.jpeg'))])
             self.current_image_index = -1
             self.next_image()
+
+            self.image_list_widget.clear()
 
             #add the image file names to the new list widget
             for image_file in self.image_files:
