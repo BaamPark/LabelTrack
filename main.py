@@ -72,6 +72,8 @@ class MainWindow(QMainWindow):
         self.btn_run_detector = QPushButton("Run Detector")
         self.btn_run_detector.clicked.connect(self.run_detector)  # Connect to the function that runs the YOLO detector
         self.btn_run_detector.setFixedWidth(100)
+        runYolo_shortcut = QShortcut(QKeySequence('q'), self)
+        runYolo_shortcut.activated.connect(self.run_detector)
         
         self.btn_add_label = QPushButton("Add Label")
         self.btn_add_label.setCheckable(True) 
@@ -416,7 +418,7 @@ class MainWindow(QMainWindow):
                 
                 coords = [int(part.strip()) for part in splited_string]
                 coords = xyhw_to_xyxy(coords)
-                rect = (QPoint(coords[0], coords[1]), QPoint(coords[2], coords[3]), id)
+                rect = (QPoint(coords[0], coords[1]), QPoint(coords[2], coords[3]), int(id))
 
             else:
                 coords = [int(part.strip()) for part in splited_string]
@@ -462,7 +464,7 @@ class MainWindow(QMainWindow):
             # it has use for loop because whenever you update iamge_label, the paintEvent work same jobs again.
             for i, rect in enumerate(self.image_label.rectangles):
                 if rect[0] == QPoint(left, top) and rect[1] == QPoint(right, bottom):
-                    self.image_label.rectangles[i] = (rect[0], rect[1], new_text)
+                    self.image_label.rectangles[i] = (rect[0], rect[1], int(new_text))
                     break
 
         # Force a repaint
