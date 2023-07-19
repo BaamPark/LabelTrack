@@ -411,12 +411,12 @@ class MainWindow(QMainWindow):
 
         if item:
             splited_string = [s.strip() for s in item.text().replace('(', '').replace(')', '').split(',')]
-            if len(splited_string) > 4:
+            if len(splited_string) > 4: #when id is included
                 id = splited_string.pop()
                 
                 coords = [int(part.strip()) for part in splited_string]
                 coords = xyhw_to_xyxy(coords)
-                rect = (QPoint(coords[0], coords[1]), QPoint(coords[2], coords[3]), int(id))
+                rect = (QPoint(coords[0], coords[1]), QPoint(coords[2], coords[3]), id)
 
             else:
                 coords = [int(part.strip()) for part in splited_string]
