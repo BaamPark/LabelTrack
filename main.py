@@ -223,7 +223,7 @@ class MainWindow(QMainWindow):
         self.id = self.id_widget.toPlainText()
         id_folder = f"saved IDs/ID{self.id}"
         if os.path.isdir(id_folder):
-            self.id_image_files = sorted([f for f in os.listdir(id_folder) if f.endswith(".jpg")])
+            self.id_image_files = sorted([f for f in os.listdir(id_folder) if f.endswith(".png")], key=sort_key)
             if self.id_image_files:  # if there are images in the directory
                 self.id_current_image_index = 0
                 self.load_saved_image(os.path.join(id_folder, self.id_image_files[self.id_current_image_index]))
@@ -234,12 +234,23 @@ class MainWindow(QMainWindow):
             self.id_current_image_index += 1
             # load the image
             self.load_saved_image(os.path.join(f"saved IDs/ID{self.id}", self.id_image_files[self.id_current_image_index]))
+        if self.id_current_image_index >= len(self.id_image_files) - 1:
+            self.id_current_image_index = len(self.id_image_files) - 1
+            self.load_saved_image(os.path.join(f"saved IDs/ID{self.id}", self.id_image_files[self.id_current_image_index]))
+
+        print("current index is",self.id_current_image_index)
+        
     def previous_id(self):
-        if self.id_image_files and self.id_current_image_index < len(self.id_image_files) - 1:
+        if self.id_image_files and self.id_current_image_index > 0:
             # increment the index
             self.id_current_image_index -= 1
-            # load the image
+            
             self.load_saved_image(os.path.join(f"saved IDs/ID{self.id}", self.id_image_files[self.id_current_image_index]))
+        if self.id_current_image_index <= 0:
+            self.id_current_image_index = 0
+            self.load_saved_image(os.path.join(f"saved IDs/ID{self.id}", self.id_image_files[self.id_current_image_index]))
+
+        print("current index is",self.id_current_image_index)
 
     def load_saved_image(self, img_path):
         # A new function for loading the image
@@ -260,7 +271,7 @@ class MainWindow(QMainWindow):
     def browse_folder(self):
         self.image_dir = QFileDialog.getExistingDirectory(self, 'Open directory', '/home')
         if self.image_dir:
-            self.image_files = sorted([f for f in os.listdir(self.image_dir) if f.endswith(('.png', '.jpg', '.jpeg'))])
+            self.image_files = sorted([f for f in os.listdir(self.image_dir) if f.endswith(('.png', '.jpg', '.jpeg'))], key=sort_key)
             self.current_image_index = -1
             self.next_image()
 
@@ -330,7 +341,6 @@ class MainWindow(QMainWindow):
 
     def run_detector(self):
         from yolo import run_yolo
-        from Bbox import Bbox
 
         if self.image_files:
             image_file = self.image_files[self.current_image_index]
@@ -502,14 +512,23 @@ def capture_bbox(bbox, source_path, scale_x, scale_y, vertical_offset, id, frame
     if original_bbox[3] > source_image.shape[0]:
         original_bbox[3] = source_image.shape[0]
 
-    # Crop the bounding box from the original image
+    # Crop the bounding box from the original image os.path.basename(path)
     bbox_image = source_image[original_bbox[1]:original_bbox[3], original_bbox[0]:original_bbox[2]]
 
     os.makedirs("saved IDs/ID{}".format(id), exist_ok=True)
 
-    output_path = "saved IDs/ID{}/frame{}_{}.jpg".format(id, frame_num, image_dir[-2:])  # replace with your desired output path
+    output_path = "saved IDs/ID{}/frame_{}_{}.png".format(id, frame_num, os.path.basename(image_dir))  # replace with your desired output path
 
     cv2.imwrite(output_path, bbox_image)
+
+def sort_key(path):
+    # Extract the base name of the file, remove the extension and "frame" prefix, and convert to integer
+    current_path = os.path.basename(path)
+    if '_' in current_path:
+        numbering = current_path.split('_')[1]
+        return int(numbering.replace('.png', ''))
+    else:
+        return int(os.path.basename(path).replace('frame', '').replace('.png', ''))
 
 
 if __name__ == "__main__":
