@@ -283,6 +283,9 @@ class MainWindow(QMainWindow):
             for image_file in self.image_files:
                 self.image_list_widget.addItem(image_file)
 
+    def check_redundunt_ids(self):
+        pass
+
     def next_image(self):
         if self.image_files:
             self.image_annotations[self.image_files[self.current_image_index]] = [self.bbox_list_widget.item(i).text() for i in range(self.bbox_list_widget.count())]
