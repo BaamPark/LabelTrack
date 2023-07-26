@@ -14,8 +14,9 @@ class ClickableImageLabel(QLabel):
         self.rectangles = []
         self.clicked_rect = []
         self.selected_rectangle_index = None
-
         self.last_pos = None
+
+        self.active_corner = None
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
@@ -42,8 +43,12 @@ class ClickableImageLabel(QLabel):
    
         elif self.selected_rectangle_index is not None:
             offset = event.pos() - self.last_pos
-            start, end = self.rectangles[self.selected_rectangle_index]
-            self.rectangles[self.selected_rectangle_index] = (start + offset, end + offset)
+            if len(self.rectangles[self.selected_rectangle_index]) == 2:
+                start, end = self.rectangles[self.selected_rectangle_index]
+                self.rectangles[self.selected_rectangle_index] = (start + offset, end + offset)
+            elif len(self.rectangles[self.selected_rectangle_index]) == 3:
+                start, end, id = self.rectangles[self.selected_rectangle_index]
+                self.rectangles[self.selected_rectangle_index] = (start + offset, end + offset, id)
 
         self.last_pos = event.pos()
         self.update()
