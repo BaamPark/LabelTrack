@@ -422,15 +422,26 @@ class MainWindow(QMainWindow):
                 
                 coords = [int(part.strip()) for part in splited_string]
                 coords = xyhw_to_xyxy(coords)
-                rect = (QPoint(coords[0], coords[1]), QPoint(coords[2], coords[3]), int(id))
+                rect = {'min_xy': QPoint(coords[0], coords[1]), 'max_xy':QPoint(coords[2], coords[3]), 'id':id, 'focus':False}
 
             else:
                 coords = [int(part.strip()) for part in splited_string]
                 coords = xyhw_to_xyxy(coords)
-                rect = (QPoint(coords[0], coords[1]), QPoint(coords[2], coords[3]))
+                rect = {'min_xy': QPoint(coords[0], coords[1]), 'max_xy':QPoint(coords[2], coords[3]), 'id':None, 'focus':False}
 
             self.bbox_list_widget.takeItem(self.bbox_list_widget.row(item))
-            self.image_label.rectangles.remove(rect)
+            print("to be removed", rect)
+            print("stored: ", self.image_label.rectangles[0])
+            print(type(self.image_label.rectangles[0]['id']))
+            for key in self.image_label.rectangles[0]:
+                if self.image_label.rectangles[0][key] != rect[key]:
+                    print('value of {} is incorrect'.format(key))
+
+            if rect in self.image_label.rectangles:
+                self.image_label.rectangles.remove(rect)
+            else: #when trying to remove focused bbox, set 'focus' value to True
+                rect['focus'] = True
+                self.image_label.rectangles.remove(rect)
 
             # Repaint the QLabel
             self.image_label.repaint()
