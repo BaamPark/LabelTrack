@@ -1,6 +1,6 @@
-# Image Annotation Tool
+# Label Track
 
-This is a Python application that serves as an image annotation tool. It allows users to browse through a directory of images, add labels to specific regions of interest (ROIs) within the images, and export the annotations to a text file.
+This is a Python application that serves as an image annotation tool, specifically multi object tracking annotation purpose. It allows users to browse through a directory of images, add labels to specific regions of interest (ROIs) within the images, and export the annotations to a text file.
 
  ![Reference Image](img/gui_img.png)
 
