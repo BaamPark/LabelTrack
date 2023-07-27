@@ -61,6 +61,16 @@ class ClickableImageLabel(QLabel):
             print(self.rectangles)
             self.parent.bbox_list_widget.addItem(str((self.start_pos.x(), self.start_pos.y(), self.end_pos.x() - self.start_pos.x(), self.end_pos.y() - self.start_pos.y())))  # Update the list widget
 
+
+        elif self.selected_rectangle_index is not None:
+            rect = self.rectangles[self.selected_rectangle_index]
+            if len(rect) == 2:
+                new_item_text = str((rect[0].x(), rect[0].y(), rect[1].x() - rect[0].x(), rect[1].y() - rect[0].y()))
+            elif len(rect) == 3:
+                new_item_text = str((rect[0].x(), rect[0].y(), rect[1].x() - rect[0].x(), rect[1].y() - rect[0].y())) + f", {rect[2]}"
+            self.parent.bbox_list_widget.item(self.selected_rectangle_index).setText(new_item_text)
+
+
     def paintEvent(self, event):
         super().paintEvent(event)
         painter = QPainter(self)
