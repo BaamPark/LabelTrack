@@ -267,6 +267,7 @@ class MainWindow(QMainWindow):
 
 
     def load_image_from_list(self, item):
+        self.image_annotations[self.image_files[self.current_image_index]] = [self.bbox_list_widget.item(i).text() for i in range(self.bbox_list_widget.count())]
         image_file = item.text()
         self.current_image_index = self.image_files.index(image_file)
         self.load_image()
@@ -378,7 +379,7 @@ class MainWindow(QMainWindow):
                 # Check if this bounding box already exists in the list widget
                 bbox_str = str((left, top, width, height))
                 existing_items = [self.bbox_list_widget.item(i).text() for i in range(self.bbox_list_widget.count())]
-                rect = (QPoint(left, top), QPoint(left + width, top + height))
+                rect = {"min_xy": QPoint(left, top), "max_xy": QPoint(left + width, top + height), 'id': None, 'focus': False}
                 self.image_label.rectangles.append(rect)
 
                 if bbox_str in existing_items:
