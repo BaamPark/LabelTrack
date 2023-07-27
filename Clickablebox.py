@@ -33,7 +33,6 @@ class ClickableImageLabel(QLabel):
                     if (corner - event.pos()).manhattanLength() < 10:  # 10 is the max distance to detect a corner
                         self.active_rectangle_index = i
                         self.active_corner = j
-                        print("check corner", self.active_corner)
                         continue
 
                 #this if block is used for relocation
@@ -50,7 +49,6 @@ class ClickableImageLabel(QLabel):
 
             #for else statement: The “else” block only executes when there is no break in the loop.
             else:
-                print("you are in else statement")
                 if self.parent.btn_add_label.isChecked() and self.active_corner is None:
                     self.start_pos = event.pos()
                     self.end_pos = event.pos()  # Also initialize end_pos here
@@ -91,7 +89,7 @@ class ClickableImageLabel(QLabel):
     def mouseReleaseEvent(self, event):
         if self.drawing:
             self.drawing = False
-            self.rectangles.append({"min_xy":self.start_pos, "max_xy":self.end_pos, 'id':None, 'focus':False})  # Store the rectangle's coordinates
+            self.rectangles.append({"min_xy":self.start_pos, "max_xy":self.end_pos, 'id': None, 'focus':False})  # Store the rectangle's coordinates
             self.update()
             self.parent.bbox_list_widget.addItem(str((self.start_pos.x(), self.start_pos.y(), self.end_pos.x() - self.start_pos.x(), self.end_pos.y() - self.start_pos.y())))  # Update the list widget
         

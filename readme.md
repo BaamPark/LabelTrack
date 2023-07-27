@@ -2,6 +2,8 @@
 
 This is a Python application that serves as an image annotation tool. It allows users to browse through a directory of images, add labels to specific regions of interest (ROIs) within the images, and export the annotations to a text file.
 
+ ![Reference Image](img/gui_img.png)
+
 ## Requirements
 
 - Python 3.x
@@ -20,6 +22,8 @@ This is a Python application that serves as an image annotation tool. It allows 
 7. To export the annotations to a text file, click on the "Export Labels" button. You will be prompted to choose a file name and location for the exported file.
 8. To import existing annotations from a text file, click on the "Import Labels" button. Select the desired text file containing the annotations.
 9. To run the YOLO object detection algorithm on the annotated images, click on the "Run Detector" button. This requires the `yolo.py` script to be present in the same directory.
+10. To resize bounding box, click and hold the circle on the corner of the bounding box and drag it to the desired size.
+11. To move bounding box, click and hold any point inside the designated bounding box and drag it to the desired location.
 
 ## Additional Features
 
