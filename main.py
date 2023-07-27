@@ -100,22 +100,22 @@ class MainWindow(QMainWindow):
         self.image_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.image_label.setPixmap(QPixmap(''))
 
-        self.saved_image_label = QLabel(self)  #!
+        self.saved_image_label = QLabel(self)
         self.saved_image_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.saved_image_label.setMaximumWidth(200)
         self.saved_image_label.setMaximumHeight(200)
         self.saved_image_label.setPixmap(QPixmap(''))
 
         self.btn_next_id = QPushButton("Next ID")
-        self.btn_next_id.clicked.connect(self.next_id) #!
+        self.btn_next_id.clicked.connect(self.next_id)
         self.btn_next_id.setFixedWidth(100)
 
         self.btn_prev_id = QPushButton("Prev ID")
-        self.btn_prev_id.clicked.connect(self.previous_id) #!
+        self.btn_prev_id.clicked.connect(self.previous_id)
         self.btn_prev_id.setFixedWidth(100)
 
         self.btn_enter_id = QPushButton("Enter ID") # New text widget
-        self.btn_enter_id.clicked.connect(self.enter_id) #!
+        self.btn_enter_id.clicked.connect(self.enter_id)
         self.btn_enter_id.setFixedWidth(100)
 
         # Create a QVBoxLayout instance for buttons
@@ -145,13 +145,13 @@ class MainWindow(QMainWindow):
         text_list_layout.addWidget(self.text_widget)
         text_list_layout.addWidget(self.btn_edit_text)
         text_list_layout.addWidget(self.bbox_list_widget)
-        text_list_layout.addWidget(self.image_list_widget) #!
+        text_list_layout.addWidget(self.image_list_widget)
         
         text_list_layout.addWidget(self.id_widget)
         text_list_layout.addWidget(self.btn_enter_id)
         text_list_layout.addWidget(self.btn_next_id)
         text_list_layout.addWidget(self.btn_prev_id)
-        text_list_layout.addWidget(self.saved_image_label) #!
+        text_list_layout.addWidget(self.saved_image_label)
 
         # Create a QHBoxLayout instance for the overall layout
         layout = QHBoxLayout()

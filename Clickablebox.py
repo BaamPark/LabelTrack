@@ -48,8 +48,6 @@ class ClickableImageLabel(QLabel):
                     rect['focus'] = True
                     break
 
-                # if self.active_corner is not None:
-                #     break
             #for else statement: The “else” block only executes when there is no break in the loop.
             else:
                 print("you are in else statement")
@@ -65,7 +63,8 @@ class ClickableImageLabel(QLabel):
         if self.drawing:
             self.end_pos = event.pos()
 
-        elif self.active_corner is not None:
+        #resize mode
+        elif self.active_corner is not None: 
             rect = self.rectangles[self.active_rectangle_index]
             if self.active_corner == 0:  # top left
                 rect['min_xy'] = event.pos()
@@ -77,7 +76,8 @@ class ClickableImageLabel(QLabel):
                 rect['max_xy'].setY(event.pos().y())
             else:  # bottom right
                 rect['max_xy'] = event.pos()
-   
+
+        #relocation mode
         elif self.selected_rectangle_index is not None:
             offset = event.pos() - self.last_pos
             start, end = self.rectangles[self.selected_rectangle_index]['min_xy'], self.rectangles[self.selected_rectangle_index]['max_xy']
@@ -94,10 +94,6 @@ class ClickableImageLabel(QLabel):
             self.rectangles.append({"min_xy":self.start_pos, "max_xy":self.end_pos, 'id':None, 'focus':False})  # Store the rectangle's coordinates
             self.update()
             self.parent.bbox_list_widget.addItem(str((self.start_pos.x(), self.start_pos.y(), self.end_pos.x() - self.start_pos.x(), self.end_pos.y() - self.start_pos.y())))  # Update the list widget
-
-            # if self.active_corner is not None:
-            #     # If a corner was being dragged, stop dragging it
-            #     self.active_corner = None
         
         elif self.selected_rectangle_index is not None:
             rect = self.rectangles[self.selected_rectangle_index]
@@ -114,7 +110,7 @@ class ClickableImageLabel(QLabel):
         super().paintEvent(event)
         painter = QPainter(self)
         font = painter.font()
-        font.setPointSize(14)  # You can adjust the size as needed
+        font.setPointSize(14) #the size of text for id
         painter.setFont(font)
         for rect in self.rectangles:
             top_left = rect['min_xy']
