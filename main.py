@@ -334,10 +334,10 @@ class MainWindow(QMainWindow):
                     splited_string = [s.strip() for s in bbox.replace('(', '').replace(')', '').split(',')]
                     if len(splited_string) == 4:
                         x, y, w, h = map(int, splited_string)
-                        rect = (QPoint(x, y), QPoint(x + w, y + h))
+                        rect = {'min_xy': QPoint(x, y), 'max_xy':QPoint(x + w, y + h)}
                     else:
                         x, y, w, h, id = map(int, splited_string)
-                        rect = (QPoint(x, y), QPoint(x + w, y + h), int(id))
+                        rect = {'min_xy': QPoint(x, y), 'max_xy':QPoint(x + w, y + h), 'id': id}
                     self.image_label.rectangles.append(rect)
                     print("after append", self.image_label.rectangles)
 
@@ -466,8 +466,9 @@ class MainWindow(QMainWindow):
             # Update the rectangles list with the bounding box ID
             # it has use for loop because whenever you update iamge_label, the paintEvent work same jobs again.
             for i, rect in enumerate(self.image_label.rectangles):
-                if rect[0] == QPoint(left, top) and rect[1] == QPoint(right, bottom):
-                    self.image_label.rectangles[i] = (rect[0], rect[1], int(new_text))
+                if rect['min_xy'] == QPoint(left, top) and rect['max_xy'] == QPoint(right, bottom):
+
+                    self.image_label.rectangles[i]['id'] = new_text
                     break
 
         # Force a repaint
