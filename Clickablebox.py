@@ -15,8 +15,8 @@ class ClickableImageLabel(QLabel):
         self.clicked_rect = []
         self.selected_rectangle_index = None
         self.last_pos = None
-
         self.active_corner = None
+
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
@@ -24,6 +24,12 @@ class ClickableImageLabel(QLabel):
                 if QRect(rect['min_xy'], rect['max_xy']).contains(event.pos()):
                     
                     self.selected_rectangle_index = i
+                    if self.parent.image_label.clicked_rect_index:
+                        past_index = self.parent.image_label.clicked_rect_index.pop()
+                        self.rectangles[past_index]['focus'] = False
+                        self.parent.image_label.clicked_rect_index.append(i)
+                        
+                    rect['focus'] = True
                     print("You click box at {}".format(i))
                     break
             #for else statement
@@ -43,14 +49,10 @@ class ClickableImageLabel(QLabel):
    
         elif self.selected_rectangle_index is not None:
             offset = event.pos() - self.last_pos
-            # if self.rectangles[self.selected_rectangle_index]['id'] is None:
             start, end = self.rectangles[self.selected_rectangle_index]['min_xy'], self.rectangles[self.selected_rectangle_index]['max_xy']
             self.rectangles[self.selected_rectangle_index]['min_xy'] = start + offset
             self.rectangles[self.selected_rectangle_index]['max_xy'] = end + offset
 
-            # elif len(self.rectangles[self.selected_rectangle_index]) is not None:
-            #     start, end, id = self.rectangles[self.selected_rectangle_index]['min_xy'], self.rectangles[self.selected_rectangle_index]['max_xy'], self.rectangles[self.selected_rectangle_index]['id']
-            #     self.rectangles[self.selected_rectangle_index] = {'min_xy':start + offset, 'max_xy': end + offset, 'id':id}
 
         self.last_pos = event.pos()
         self.update()
@@ -66,58 +68,32 @@ class ClickableImageLabel(QLabel):
 
         elif self.selected_rectangle_index is not None:
             rect = self.rectangles[self.selected_rectangle_index]
-            if len(rect) == 2:
+            self.update()
+            rect['focus'] = False
+            if rect['id'] is None:
                 new_item_text = str((rect['min_xy'].x(), rect['min_xy'].y(), rect['max_xy'].x() - rect['min_xy'].x(), rect['max_xy'].y() - rect['min_xy'].y()))
-            elif len(rect) == 3:
+            elif rect['id'] is not None:
                 new_item_text = str((rect['min_xy'].x(), rect['min_xy'].y(), rect['max_xy'].x() - rect['min_xy'].x(), rect['max_xy'].y() - rect['min_xy'].y())) + f", {rect['id']}"
             self.parent.bbox_list_widget.item(self.selected_rectangle_index).setText(new_item_text)
-
 
     def paintEvent(self, event):
         super().paintEvent(event)
         painter = QPainter(self)
-        # pen = QPen(Qt.green, 3)
-        # painter.setPen(pen)
         font = painter.font()
         font.setPointSize(14)  # You can adjust the size as needed
         painter.setFont(font)
         for rect in self.rectangles:
-            pen = QPen(Qt.green, 3)
-            if 'select': 
-                pass #!
+            pen = QPen(Qt.green, 1)
+            if rect['focus']:
+                pen = QPen(Qt.red, 2)
 
             painter.setPen(pen)
-            if len(rect) == 3:  # Check if this rectangle has an ID
+            if rect['id'] is not None:  # Check if this rectangle has an ID
                 bbox_id = rect['id']
-                
                 # Calculate center x coordinate of the bounding box
                 center_x = rect['min_xy'].x() + ((rect["max_xy"].x() - rect['min_xy'].x()) / 2)
-                
                 # Draw the text at the top center of the bounding box
                 painter.drawText(int(center_x - 5), int(rect['min_xy'].y() - 5), str(bbox_id))  # The "-5" is for adjusting the position of the text
             painter.drawRect(QRect(rect["min_xy"], rect["max_xy"]))
-
-        for rect in self.clicked_rect:
-            pen = QPen(Qt.red, 3)
-            painter.setPen(pen)
-            if len(rect) == 3:  # Check if this rectangle has an ID
-                bbox_id = rect[2]
-                
-                # Calculate center x coordinate of the bounding box
-                center_x = rect["min_xy"].x() + ((rect["max_xy"].x() - rect["min_xy"].x()) / 2)
-                
-                # Draw the text at the top center of the bounding box
-                painter.drawText(int(center_x - 5), int(rect["min_xy"].y() - 5), str(bbox_id))  # The "-5" is for adjusting the position of the text
-            painter.drawRect(QRect(rect["min_xy"], rect["max_xy"]))
             
         painter.end()
-            
-    # def paintEvent(self, event):
-    #     super().paintEvent(event)
-    #     painter = QPainter(self)
-    #     painter.setPen(QPen(Qt.red, 3))
-    #     if self.drawing and self.start_pos and self.end_pos:
-    #         print("Drawing")
-    #         painter.drawRect(QRect(self.start_pos, self.end_pos))
-    #     for rect in self.rectangles:
-    #         painter.drawRect(QRect(*rect))

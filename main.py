@@ -173,22 +173,30 @@ class MainWindow(QMainWindow):
             self.next_image()
 
     def handle_item_double_clicked(self, item):
-        if self.image_label.clicked_rect:
-            self.image_label.clicked_rect.pop()
+        if self.image_label.clicked_rect_index:
+            past_index = self.image_label.clicked_rect_index.pop()
+            print('popped index, {}'.format(past_index))
+            self.image_label.rectangles[past_index]['focus'] = False
             self.image_label.update()
         self.highlight_bbox(item.text())
 
     
     def highlight_bbox(self, bbox):
         splited_string = [s.strip() for s in bbox.replace('(', '').replace(')', '').split(',')]
-        if len(splited_string) == 4:
-            x, y, w, h = map(int, bbox.replace('(', '').replace(')', '').split(','))
-            rect = (QPoint(x, y), QPoint(x + w, y + h), '', 'red')
-            self.image_label.clicked_rect.append(rect)
-        elif len(splited_string) == 5:
-            x, y, w, h, id = map(int, bbox.replace('(', '').replace(')', '').split(','))
-            rect = (QPoint(x, y), QPoint(x + w, y + h), id, 'red')
-            self.image_label.clicked_rect.append(rect)
+        if len(splited_string) > 4:
+            splited_string = splited_string[:4]
+        left, top, width, height = map(int, splited_string)
+        vertices = [left, top, width, height]
+        vertices = xyhw_to_xyxy(vertices)
+        right, bottom = vertices[2], vertices[3]
+
+        for i, rect in enumerate(self.image_label.rectangles):
+                if rect['min_xy'] == QPoint(left, top) and rect['max_xy'] == QPoint(right, bottom):
+
+                    self.image_label.rectangles[i]['focus'] = True
+                    self.image_label.clicked_rect_index.append(i)
+                    print("udpate rectangle: ", self.image_label.rectangles[i])
+                    break
 
         self.image_label.update()
 
@@ -255,19 +263,13 @@ class MainWindow(QMainWindow):
         print("current index is",self.id_current_image_index)
 
     def load_saved_image(self, img_path):
-        # A new function for loading the image
         pixmap = QPixmap(img_path)
         scaled_pixmap = pixmap.scaled(self.saved_image_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
         self.saved_image_label.setPixmap(scaled_pixmap)
 
     def load_image_from_list(self, item):
-        # This new method is called when an item in the QListWidget is clicked
-        # The clicked item is passed as an argument to the method
-        # Get the text of the item (which is the image file name)
         image_file = item.text()
-        # Set the current image index to the index of the clicked image file
         self.current_image_index = self.image_files.index(image_file)
-        # Load the image
         self.load_image()
 
     def browse_folder(self):
@@ -276,15 +278,10 @@ class MainWindow(QMainWindow):
             self.image_files = sorted([f for f in os.listdir(self.image_dir) if f.endswith(('.png', '.jpg', '.jpeg'))], key=sort_key)
             self.current_image_index = -1
             self.next_image()
-
             self.image_list_widget.clear()
 
-            #add the image file names to the new list widget
             for image_file in self.image_files:
                 self.image_list_widget.addItem(image_file)
-
-    def check_redundunt_ids(self):
-        pass
 
     def next_image(self):
         if self.image_files:
@@ -318,7 +315,7 @@ class MainWindow(QMainWindow):
 
     def load_image(self):
         print(self.image_label.rectangles)
-        self.image_label.clicked_rect = []
+        self.image_label.clicked_rect_index = []
         if self.image_files:
             image_file = self.image_files[self.current_image_index]
             self.file_label.setText(f"Current file: {image_file}")
@@ -334,10 +331,10 @@ class MainWindow(QMainWindow):
                     splited_string = [s.strip() for s in bbox.replace('(', '').replace(')', '').split(',')]
                     if len(splited_string) == 4:
                         x, y, w, h = map(int, splited_string)
-                        rect = {'min_xy': QPoint(x, y), 'max_xy':QPoint(x + w, y + h)}
+                        rect = {'min_xy': QPoint(x, y), 'max_xy':QPoint(x + w, y + h), 'id': None, 'focus': False}
                     else:
                         x, y, w, h, id = map(int, splited_string)
-                        rect = {'min_xy': QPoint(x, y), 'max_xy':QPoint(x + w, y + h), 'id': id}
+                        rect = {'min_xy': QPoint(x, y), 'max_xy':QPoint(x + w, y + h), 'id': id, 'focus': False}
                     self.image_label.rectangles.append(rect)
                     print("after append", self.image_label.rectangles)
 
@@ -409,8 +406,8 @@ class MainWindow(QMainWindow):
 
     def remove_label(self):
         #remove highlighted rectangle when loading image
-        if self.image_label.clicked_rect:
-            self.image_label.clicked_rect.pop()
+        if self.image_label.clicked_rect_index:
+            self.image_label.clicked_rect_index.pop()
 
         item = self.bbox_list_widget.currentItem()
 
@@ -438,12 +435,8 @@ class MainWindow(QMainWindow):
     def edit_text(self):
         image_file = self.image_files[self.current_image_index]
         source = os.path.join(self.image_dir, image_file)
-        # Get the current text from the QTextEdit widget
         new_text = self.text_widget.toPlainText()
-
         scale_x, scale_y, vertical_offset = self.calculate_scale_and_offset(source)
-
-        # Get the currently selected item from the QListWidget
         current_item = self.bbox_list_widget.currentItem()
 
         # If an item is selected, update its text
@@ -469,10 +462,12 @@ class MainWindow(QMainWindow):
                 if rect['min_xy'] == QPoint(left, top) and rect['max_xy'] == QPoint(right, bottom):
 
                     self.image_label.rectangles[i]['id'] = new_text
+                    print("udpate rectangle: ", self.image_label.rectangles[i]['id'])
                     break
 
         # Force a repaint
         self.image_label.update()
+        print('update new text {}'.format(self.image_label))
 
     def calculate_scale_and_offset(self, source):
         # Load the image into a QPixmap
