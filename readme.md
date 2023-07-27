@@ -36,3 +36,4 @@ The application creates a folder named "saved IDs" in the current directory to s
 
 ## Notes
 - Annotation file is automatically saved in MoT format. Make sure copy the automatically save file before you re-open the program when program crashes.
+- The name of image files in your directory should meet the format as follows: frame_1.jpg, frame_2.jpg, frame_3.jpg, etc.
