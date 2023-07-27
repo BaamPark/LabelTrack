@@ -27,12 +27,12 @@ This is a Python application that serves as an image annotation tool, specifical
 
 ## Additional Features
 
-- The application supports keyboard shortcuts for navigating through the images. Press "d" to go to the next image and "a" to go to the previous image.
+- The application supports keyboard shortcuts for navigating through the images. Press "d" to go to the next image and "a" to go to the previous image. Press "R" to remove selected label.
 - The application allows users to enter an ID and load previously saved images associated with that ID. Use the "Next ID" and "Prev ID" buttons to navigate through the saved images.
 
 ## Saved IDs
 
 The application creates a folder named "saved IDs" in the current directory to store images associated with specific IDs. Each ID has its own subfolder within the "saved IDs" folder. The images are saved in the format "frame{frame_num}_{image_dir[-2:]}.jpg".
 
-## Note
-- Resize button that resize the bounding box will be 
+## Notes
+- Annotation file is automatically saved in MoT format. Make sure copy the automatically save file before you re-open the program when program crashes.
