@@ -14,7 +14,7 @@ from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QShortcut
 
 class MainWindow(QMainWindow):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None): #fight
         super(MainWindow, self).__init__(parent)
 
         self.setWindowTitle("Image Annotation Tool")
