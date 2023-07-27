@@ -122,7 +122,7 @@ class ClickableImageLabel(QLabel):
             top_right = QPoint(bottom_right.x(), top_left.y())
             bottom_left = QPoint(top_left.x(), bottom_right.y())
 
-            pen = QPen(QColor(135, 206, 235), 1)
+            pen = QPen(QColor(135, 206, 235), 1)  #sky blue rgb code
             painter.setPen(pen)
             painter.setBrush(QColor(135, 206, 235))
             for corner in [top_left, top_right, bottom_left, bottom_right]:
