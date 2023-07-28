@@ -67,6 +67,14 @@ class MainWindow(QMainWindow):
         prev_shorcut = QShortcut(QKeySequence('a'), self)
         prev_shorcut.activated.connect(self.previous_image)
 
+        self.btn_load_prev_labels = QPushButton("Load prebox")
+        self.btn_load_prev_labels.clicked.connect(self.load_prev_labels)  # Connect to the function that runs the YOLO detector
+        self.btn_load_prev_labels.setFixedWidth(100)
+
+        self.btn_clear_all = QPushButton("Clear all")
+        self.btn_clear_all.clicked.connect(self.clear_labels)  # Connect to the function that runs the YOLO detector
+        self.btn_clear_all.setFixedWidth(100)
+
         self.btn_run_detector = QPushButton("Run Detector")
         self.btn_run_detector.clicked.connect(self.run_detector)  # Connect to the function that runs the YOLO detector
         self.btn_run_detector.setFixedWidth(100)
@@ -123,9 +131,11 @@ class MainWindow(QMainWindow):
         button_layout.addWidget(self.btn_browse)
         button_layout.addWidget(self.btn_next)
         button_layout.addWidget(self.btn_prev)
+        button_layout.addWidget(self.btn_load_prev_labels)
         button_layout.addWidget(self.btn_run_detector)
         button_layout.addWidget(self.btn_add_label)
         button_layout.addWidget(self.btn_remove_label)
+        button_layout.addWidget(self.btn_clear_all)
         button_layout.addWidget(self.btn_export_label)
         button_layout.addWidget(self.btn_import_label)
         
@@ -302,6 +312,32 @@ class MainWindow(QMainWindow):
             self.current_image_index -= 1
             self.load_image()
 
+    def clear_labels(self):
+        self.bbox_list_widget.clear()
+        self.image_label.rectangles.clear()
+        self.image_label.update()
+
+
+    def load_prev_labels(self):
+
+        image_file = self.image_files[self.current_image_index - 1]
+        if image_file in self.image_annotations:
+            # self.bbox_list_widget.clear()
+            for bbox in self.image_annotations[image_file]:
+                self.bbox_list_widget.addItem(bbox)
+                splited_string = [s.strip() for s in bbox.replace('(', '').replace(')', '').split(',')]
+                if len(splited_string) == 4:
+                    x, y, w, h = map(int, splited_string)
+                    rect = {'min_xy': QPoint(x, y), 'max_xy':QPoint(x + w, y + h), 'id': None, 'focus': False}
+                else:
+                    x, y, w, h, id = map(int, splited_string)
+                    rect = {'min_xy': QPoint(x, y), 'max_xy':QPoint(x + w, y + h), 'id': str(id), 'focus': False}
+                self.image_label.rectangles.append(rect)
+            self.image_label.update()
+
+        # else:
+        #     self.bbox_list_widget.clear()
+
 
     def import_label(self):
         options = QFileDialog.Options()
@@ -431,14 +467,11 @@ class MainWindow(QMainWindow):
                 rect = {'min_xy': QPoint(coords[0], coords[1]), 'max_xy':QPoint(coords[2], coords[3]), 'id':None, 'focus':False}
 
             self.bbox_list_widget.takeItem(self.bbox_list_widget.row(item))
-            print("to be removed", rect)
-            print("stored: ", self.image_label.rectangles[0])
-            print(type(self.image_label.rectangles[0]['id']))
-            for key in self.image_label.rectangles[0]:
-                if self.image_label.rectangles[0][key] != rect[key]:
-                    print('value of {} is incorrect'.format(key))
 
+            print("rect to be removed:", rect)
+            print("rect list first elem", self.image_label.rectangles[0])
             if rect in self.image_label.rectangles:
+
                 self.image_label.rectangles.remove(rect)
             else: #when trying to remove focused bbox, set 'focus' value to True
                 rect['focus'] = True
