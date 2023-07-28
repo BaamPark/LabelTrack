@@ -89,9 +89,11 @@ class ClickableImageLabel(QLabel):
     def mouseReleaseEvent(self, event):
         if self.drawing:
             self.drawing = False
-            self.rectangles.append({"min_xy":self.start_pos, "max_xy":self.end_pos, 'id': None, 'focus':False})  # Store the rectangle's coordinates
+            rect = {"min_xy":self.start_pos, "max_xy":self.end_pos, 'id': None, 'focus':False}
+            rect = self.check_negative_box(rect)
+            self.rectangles.append(rect)  # Store the rectangle's coordinates
             self.update()
-            self.parent.bbox_list_widget.addItem(str((self.start_pos.x(), self.start_pos.y(), self.end_pos.x() - self.start_pos.x(), self.end_pos.y() - self.start_pos.y())))  # Update the list widget
+            self.parent.bbox_list_widget.addItem(str((rect['min_xy'].x(), rect['min_xy'].y(), rect['max_xy'].x() - rect['min_xy'].x(), rect['max_xy'].y() - rect['min_xy'].y())))  # Update the list widget
         
         elif self.selected_rectangle_index is not None:
             rect = self.rectangles[self.selected_rectangle_index]
@@ -102,6 +104,17 @@ class ClickableImageLabel(QLabel):
             elif rect['id'] is not None:
                 new_item_text = str((rect['min_xy'].x(), rect['min_xy'].y(), rect['max_xy'].x() - rect['min_xy'].x(), rect['max_xy'].y() - rect['min_xy'].y())) + f", {rect['id']}"
             self.parent.bbox_list_widget.item(self.selected_rectangle_index).setText(new_item_text)
+
+    def check_negative_box(self, rect):
+        print("min x: ", rect['min_xy'].x())
+        print("max x", rect['max_xy'].x())
+        if rect['min_xy'].x() > rect['max_xy'].x() or rect['min_xy'].y() > rect['max_xy'].y():
+            rect['min_xy'], rect['max_xy'] = rect['max_xy'], rect['min_xy']
+            print("min x: ", rect['min_xy'].x())
+            print("max x", rect['max_xy'].x())
+            return rect
+        else:
+            return rect
 
     
     def paintEvent(self, event):

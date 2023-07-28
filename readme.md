@@ -24,6 +24,8 @@ This is a Python application that serves as an image annotation tool, specifical
 9. To run the YOLO object detection algorithm on the annotated images, click on the "Run Detector" button. This requires the `yolo.py` script to be present in the same directory.
 10. To resize bounding box, click and hold the circle on the corner of the bounding box and drag it to the desired size.
 11. To move bounding box, click and hold any point inside the designated bounding box and drag it to the desired location.
+12. To remove all bounding boxes at once, click on the "Clear All" button.
+13. To bring labels that you have done at the previous frame to the current frame, click on the "Load Prebox" button.
 
 ## Additional Features
 
