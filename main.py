@@ -578,10 +578,20 @@ def sort_key(path):
     # Extract the base name of the file, remove the extension and "frame" prefix, and convert to integer
     current_path = os.path.basename(path)
     if '_' in current_path:
-        numbering = current_path.split('_')[-1]
+        numbering = current_path.split('_')[1]
         return int(numbering.replace('.png', ''))
     else:
         return int(os.path.basename(path).replace('frame', '').replace('.png', ''))
+    
+# def sort_key(path):
+#     # Extract the base name of the file, remove the extension and "frame" prefix, and convert to integer
+#     current_path = os.path.basename(path)
+#     if '_' in current_path:
+#         numbering = current_path.split('_')[-1]
+#         return int(numbering.replace('.png', ''))
+#     else:
+#         return int(os.path.basename(path).replace('frame', '').replace('.png', ''))
+
 
 
 if __name__ == "__main__":

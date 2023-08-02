@@ -5,8 +5,7 @@ from logger_config import logger
 from itertools import cycle
 
 class ClickableImageLabel(QLabel):
-    colors = cycle([Qt.green, Qt.blue, Qt.yellow, Qt.magenta, Qt.cyan, Qt.black])
-    
+
     def __init__(self, parent):
         super().__init__(parent) #https://www.educative.io/answers/what-is-super-in-python
         #This is separate from the concept of class inheritance. 
@@ -112,18 +111,16 @@ class ClickableImageLabel(QLabel):
             self.parent.bbox_list_widget.item(self.selected_rectangle_index).setText(new_item_text)
 
     def check_negative_box(self, rect):
-        print("min x: ", rect['min_xy'].x())
-        print("max x", rect['max_xy'].x())
         if rect['min_xy'].x() > rect['max_xy'].x() or rect['min_xy'].y() > rect['max_xy'].y():
             logger.info(f"trying to fix negative bounding box: {rect}")
             rect['min_xy'], rect['max_xy'] = rect['max_xy'], rect['min_xy']
-            print("min x: ", rect['min_xy'].x())
-            print("max x", rect['max_xy'].x())
+            logger.info(f'fixed coordinate of rect: {rect}')
             return rect
         else:
             return rect
 
     
+
     def paintEvent(self, event):
         super().paintEvent(event)
         painter = QPainter(self)
