@@ -5,3 +5,5 @@ yolov8s.pt
 .vscode/
 annotations*
 __pycache__/
+*.txt
+*.log

@@ -12,6 +12,7 @@ from PyQt5.QtCore import QPoint
 from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QShortcut
+from logger_config import logger
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None): #conflict
@@ -319,7 +320,7 @@ class MainWindow(QMainWindow):
 
 
     def load_prev_labels(self):
-
+        logger.info('loading labels from previous frame')
         image_file = self.image_files[self.current_image_index - 1]
         if image_file in self.image_annotations:
             # self.bbox_list_widget.clear()
@@ -345,6 +346,7 @@ class MainWindow(QMainWindow):
         file_name, _ = QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileName()", "","Text Files (*.txt)", options=options)
         if file_name:
             with open(file_name, 'r') as f:
+                self.image_annotations.clear()
                 for line in f:
                     file, id_, x, y, w, h, _, _, _, _ = line.split(',')
                     if file not in self.image_annotations:
@@ -373,7 +375,7 @@ class MainWindow(QMainWindow):
                         rect = {'min_xy': QPoint(x, y), 'max_xy':QPoint(x + w, y + h), 'id': None, 'focus': False}
                     else:
                         x, y, w, h, id = map(int, splited_string)
-                        rect = {'min_xy': QPoint(x, y), 'max_xy':QPoint(x + w, y + h), 'id': id, 'focus': False}
+                        rect = {'min_xy': QPoint(x, y), 'max_xy':QPoint(x + w, y + h), 'id': str(id), 'focus': False}
                     self.image_label.rectangles.append(rect)
 
             else:
@@ -468,10 +470,9 @@ class MainWindow(QMainWindow):
 
             self.bbox_list_widget.takeItem(self.bbox_list_widget.row(item))
 
-            print("rect to be removed:", rect)
-            print("rect list first elem", self.image_label.rectangles[0])
-            if rect in self.image_label.rectangles:
+            logger.info(f'trying to remove rect: {rect} from rectangle list: {self.image_label.rectangles}')
 
+            if rect in self.image_label.rectangles:
                 self.image_label.rectangles.remove(rect)
             else: #when trying to remove focused bbox, set 'focus' value to True
                 rect['focus'] = True
@@ -509,7 +510,8 @@ class MainWindow(QMainWindow):
             # it has use for loop because whenever you update iamge_label, the paintEvent work same jobs again.
             for i, rect in enumerate(self.image_label.rectangles):
                 if rect['min_xy'] == QPoint(left, top) and rect['max_xy'] == QPoint(right, bottom):
-
+                    
+                    logger.info('trying to assign new id')
                     self.image_label.rectangles[i]['id'] = new_text
                     break
 
@@ -576,7 +578,7 @@ def sort_key(path):
     # Extract the base name of the file, remove the extension and "frame" prefix, and convert to integer
     current_path = os.path.basename(path)
     if '_' in current_path:
-        numbering = current_path.split('_')[1]
+        numbering = current_path.split('_')[-1]
         return int(numbering.replace('.png', ''))
     else:
         return int(os.path.basename(path).replace('frame', '').replace('.png', ''))

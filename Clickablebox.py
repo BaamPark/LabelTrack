@@ -1,8 +1,12 @@
 from PyQt5.QtCore import Qt, QRect, QPoint
 from PyQt5.QtGui import QPainter, QPen, QColor
 from PyQt5.QtWidgets import QLabel
+from logger_config import logger
+from itertools import cycle
 
 class ClickableImageLabel(QLabel):
+    colors = cycle([Qt.green, Qt.blue, Qt.yellow, Qt.magenta, Qt.cyan, Qt.black])
+    
     def __init__(self, parent):
         super().__init__(parent) #https://www.educative.io/answers/what-is-super-in-python
         #This is separate from the concept of class inheritance. 
@@ -31,13 +35,14 @@ class ClickableImageLabel(QLabel):
                 #this for loop is used for resizing the box
                 for j, corner in enumerate([top_left, top_right, bottom_left, bottom_right]):
                     if (corner - event.pos()).manhattanLength() < 10:  # 10 is the max distance to detect a corner
+                        logger.info('trying to resize bounding box')
                         self.active_rectangle_index = i
                         self.active_corner = j
                         continue
 
                 #this if block is used for relocation
                 if QRect(top_left, bottom_right).contains(event.pos()):
-
+                    logger.info('trying to relocate bounding box')
                     self.selected_rectangle_index = i
                     if self.parent.image_label.clicked_rect_index:
                         past_index = self.parent.image_label.clicked_rect_index.pop()
@@ -50,6 +55,7 @@ class ClickableImageLabel(QLabel):
             #for else statement: The “else” block only executes when there is no break in the loop.
             else:
                 if self.parent.btn_add_label.isChecked() and self.active_corner is None:
+                    logger.info('trying to draw bounding box')
                     self.start_pos = event.pos()
                     self.end_pos = event.pos()  # Also initialize end_pos here
                     self.drawing = True
@@ -109,6 +115,7 @@ class ClickableImageLabel(QLabel):
         print("min x: ", rect['min_xy'].x())
         print("max x", rect['max_xy'].x())
         if rect['min_xy'].x() > rect['max_xy'].x() or rect['min_xy'].y() > rect['max_xy'].y():
+            logger.info(f"trying to fix negative bounding box: {rect}")
             rect['min_xy'], rect['max_xy'] = rect['max_xy'], rect['min_xy']
             print("min x: ", rect['min_xy'].x())
             print("max x", rect['max_xy'].x())
