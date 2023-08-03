@@ -114,21 +114,22 @@ class ClickableImageLabel(QLabel):
         if rect['min_xy'].x() > rect['max_xy'].x() and rect['min_xy'].y() > rect['max_xy'].y():
             logger.info(f"trying to fix negative bounding box: {rect}")
             rect['min_xy'], rect['max_xy'] = rect['max_xy'], rect['min_xy']
-            logger.info(f'fixed coordinate of rect: {rect}')
             return rect
         
         elif rect['min_xy'].x() > rect['max_xy'].x() and rect['max_xy'].y() > rect['min_xy'].y():
+            logger.info(f"trying to fix negative bounding box: {rect}")
             temp = rect['min_xy'].x()
             rect['min_xy'].setX(rect['max_xy'].x())
             rect['max_xy'].setX(temp)
-            print('changed')
             return rect
+        
         elif rect['max_xy'].x() > rect['min_xy'].x() and rect['min_xy'].y() > rect['max_xy'].y():
+            logger.info(f"trying to fix negative bounding box: {rect}")
             temp = rect['min_xy'].y()
             rect['min_xy'].setY(rect['max_xy'].y())
             rect['max_xy'].setY(temp)
-            print('changed')
             return rect
+        
         else:
             return rect
 
