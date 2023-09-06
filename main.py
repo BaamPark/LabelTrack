@@ -236,6 +236,7 @@ class MainWindow(QMainWindow):
                         continue
                     bbox, id_ = annotation.rsplit(',', 1)
                     x, y, w, h = map(int, bbox.strip('()').split(','))
+                    x, y, w, h = self.convert_pixmap_to_source_coordinate(x, y, w, h)
                     f.write(f"{file},{id_.strip()},{x},{y},{w},{h},1,-1,-1,-1\n")
     
 
@@ -344,11 +345,17 @@ class MainWindow(QMainWindow):
         options = QFileDialog.Options()
         options |= QFileDialog.ReadOnly
         file_name, _ = QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileName()", "","Text Files (*.txt)", options=options)
+        
         if file_name:
             with open(file_name, 'r') as f:
                 self.image_annotations.clear()
                 for line in f:
                     file, id_, x, y, w, h, _, _, _, _ = line.split(',')
+                    x, y, w, h = self.convert_source_to_pixmap_coordinate(x, y, w, h)
+                    # left = int(org_left * scale_x)
+                    # top = int((org_top * scale_y) + vertical_offset)
+                    # width = int(org_width * scale_x)
+                    # height = int(org_height * scale_y)
                     if file not in self.image_annotations:
                         self.image_annotations[file] = [f"({x}, {y}, {w}, {h}), {id_}"]
                     else:
@@ -532,6 +539,37 @@ class MainWindow(QMainWindow):
 
         vertical_offset = (self.image_label.height() - pixmap.height()) / 2
         return scale_x, scale_y, vertical_offset
+    
+
+    def prepend_calculate_scale_and_offset(self):
+        image_file = self.image_files[self.current_image_index]
+        source = os.path.join(self.image_dir, image_file)
+        scale_x, scale_y, vertical_offset = self.calculate_scale_and_offset(source)
+        return scale_x, scale_y, vertical_offset
+    
+
+    def convert_source_to_pixmap_coordinate(self, x, y, w, h):
+        x, y, w, h = map(int, (x, y, w, h))
+        scale_x, scale_y, vertical_offset = self.prepend_calculate_scale_and_offset()
+        
+        x = int(x * scale_x)
+        y = int((y * scale_y) + vertical_offset)
+        w = int(w * scale_x)
+        h = int(h * scale_y)
+
+        return x, y, w, h 
+    
+
+    def convert_pixmap_to_source_coordinate(self, x, y, w, h):
+        x, y, w, h = map(int, (x, y, w, h))
+        scale_x, scale_y, vertical_offset = self.prepend_calculate_scale_and_offset()
+        
+        x = int(x / scale_x)
+        y = int((y - vertical_offset) / scale_y)
+        w = int(w / scale_x)
+        h = int(h / scale_y)
+        
+        return x, y, w, h 
 
 
 #external function
