@@ -352,10 +352,6 @@ class MainWindow(QMainWindow):
                 for line in f:
                     file, id_, x, y, w, h, _, _, _, _ = line.split(',')
                     x, y, w, h = self.convert_source_to_pixmap_coordinate(x, y, w, h)
-                    # left = int(org_left * scale_x)
-                    # top = int((org_top * scale_y) + vertical_offset)
-                    # width = int(org_width * scale_x)
-                    # height = int(org_height * scale_y)
                     if file not in self.image_annotations:
                         self.image_annotations[file] = [f"({x}, {y}, {w}, {h}), {id_}"]
                     else:
@@ -393,14 +389,13 @@ class MainWindow(QMainWindow):
         from yolo import run_yolo
 
         if self.image_files:
+            
             image_file = self.image_files[self.current_image_index]
             source = os.path.join(self.image_dir, image_file)
             _, bbox_list = run_yolo(source)
-            scale_x, scale_y, vertical_offset = self.calculate_scale_and_offset(source)
             pixmap = QPixmap(source)
-            # Scale the QPixmap to fit the QLabel
+            # # Scale the QPixmap to fit the QLabel
             pixmap = pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio)
-            scale_x, scale_y, vertical_offset = self.calculate_scale_and_offset(source)
 
             # Update QLabel
             self.image_label.setPixmap(pixmap)
@@ -409,18 +404,7 @@ class MainWindow(QMainWindow):
             self.image_label.rectangles = [] 
 
             for bb_left, bb_top, bb_width, bb_height in bbox_list:
-                # Convert bounding box values to int
-                org_left = int(bb_left)
-                org_top = int(bb_top)
-                org_width = int(bb_width)
-                org_height = int(bb_height)
-
-                # Convert the coordinates to the QLabel's coordinate system
-                left = int(org_left * scale_x)
-                top = int((org_top * scale_y) + vertical_offset)
-                width = int(org_width * scale_x)
-                height = int(org_height * scale_y)
-
+                left, top, width, height = self.convert_source_to_pixmap_coordinate(bb_left, bb_top, bb_width, bb_height)
                 # Check if this bounding box already exists in the list widget
                 bbox_str = str((left, top, width, height))
                 existing_items = [self.bbox_list_widget.item(i).text() for i in range(self.bbox_list_widget.count())]
