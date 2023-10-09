@@ -18,37 +18,47 @@ class ClickableImageLabel(QLabel):
         self.clicked_rect = []
         self.selected_rectangle_index = None
         self.last_pos = None
-        self.active_rectangle_index = None
         self.active_corner = None
 
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             self.active_corner = None
+            break_outer_loop = False 
             for i, rect in enumerate(self.rectangles):
                 top_left = rect['min_xy']
                 bottom_right = rect['max_xy']
                 top_right = QPoint(bottom_right.x(), top_left.y())
                 bottom_left = QPoint(top_left.x(), bottom_right.y())
 
+                resizing_condition = False
+                relocating_condition = False
+
                 #this for loop is used for resizing the box
                 for j, corner in enumerate([top_left, top_right, bottom_left, bottom_right]):
                     if (corner - event.pos()).manhattanLength() < 10:  # 10 is the max distance to detect a corner
                         logger.info('trying to resize bounding box')
-                        self.active_rectangle_index = i
+                        self.selected_rectangle_index = i
                         self.active_corner = j
-                        continue
+                        resizing_condition = True
 
-                #this if block is used for relocation
-                if QRect(top_left, bottom_right).contains(event.pos()):
-                    logger.info('trying to relocate bounding box')
-                    self.selected_rectangle_index = i
-                    if self.parent.image_label.clicked_rect_index:
-                        past_index = self.parent.image_label.clicked_rect_index.pop()
-                        self.rectangles[past_index]['focus'] = False
-                        self.parent.image_label.clicked_rect_index.append(i)
+                    
+                    elif (corner - event.pos()).manhattanLength() >= 10 and QRect(top_left, bottom_right).contains(event.pos()):
+                        logger.info('trying to relocate bounding box')
+                        self.selected_rectangle_index = i
+                        relocating_condition = True
+                
+                    if resizing_condition or relocating_condition:
+                        if self.parent.image_label.clicked_rect_index: 
+                            past_index = self.parent.image_label.clicked_rect_index.pop()
+                            self.rectangles[past_index]['focus'] = False
+                            self.parent.image_label.clicked_rect_index.append(i)
                         
-                    rect['focus'] = True
+                        rect['focus'] = True
+                        break_outer_loop = True  # Set flag to True to break outer loop
+                        continue
+            
+                if break_outer_loop:
                     break
 
             #for else statement: The “else” block only executes when there is no break in the loop.
@@ -68,7 +78,7 @@ class ClickableImageLabel(QLabel):
 
         #resize mode
         elif self.active_corner is not None: 
-            rect = self.rectangles[self.active_rectangle_index]
+            rect = self.rectangles[self.selected_rectangle_index]
             if self.active_corner == 0:  # top left
                 rect['min_xy'] = event.pos()
             elif self.active_corner == 1:  # top right
@@ -81,7 +91,7 @@ class ClickableImageLabel(QLabel):
                 rect['max_xy'] = event.pos()
 
         #relocation mode
-        elif self.selected_rectangle_index is not None:
+        else:
             offset = event.pos() - self.last_pos
             start, end = self.rectangles[self.selected_rectangle_index]['min_xy'], self.rectangles[self.selected_rectangle_index]['max_xy']
             self.rectangles[self.selected_rectangle_index]['min_xy'] = start + offset
