@@ -92,6 +92,8 @@ class ClickableImageLabel(QLabel):
 
         #relocation mode
         else:
+            if self.selected_rectangle_index is None:
+                return
             offset = event.pos() - self.last_pos
             start, end = self.rectangles[self.selected_rectangle_index]['min_xy'], self.rectangles[self.selected_rectangle_index]['max_xy']
             self.rectangles[self.selected_rectangle_index]['min_xy'] = start + offset
